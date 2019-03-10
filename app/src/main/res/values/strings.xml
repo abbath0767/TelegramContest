@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">TelegramContest</string>
+    <string name="select_diagram">Select Diagram</string>
+    <string name="data_set_describe">DataSet №%d, values count: %d</string>
 </resources>
