@@ -3,5 +3,7 @@
     <dimen name="common_8">8dp</dimen>
     <dimen name="common_1">1dp</dimen>
     <dimen name="common_16">16dp</dimen>
+    <dimen name="common_32">32dp</dimen>
+    <dimen name="common_48">48dp</dimen>
     <dimen name="common_16sp">16sp</dimen>
 </resources>

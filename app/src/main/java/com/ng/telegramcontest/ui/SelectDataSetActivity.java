@@ -3,7 +3,7 @@ package com.ng.telegramcontest.ui;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
-import android.util.Log;
+import android.support.v7.widget.Toolbar;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -22,13 +22,18 @@ public class SelectDataSetActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.select_data_set_activity);
-        setTitle(R.string.select_diagram);
+        setActionBar();
 
         root = findViewById(R.id.content_view);
 
         mDataStorage = ((App) getApplicationContext()).getDataStorage();
 
         setUpChartsButtons(mDataStorage.getCharts().getChartsData());
+    }
+
+    private void setActionBar() {
+        setSupportActionBar((Toolbar) findViewById(R.id.my_toolbar));
+        setTitle(R.string.select_diagram);
     }
 
     private void setUpChartsButtons(final ChartData[] chartsData) {
