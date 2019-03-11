@@ -18,8 +18,9 @@ import com.ng.telegramcontest.data.ChartData;
 import com.ng.telegramcontest.data.DataStorage;
 import com.ng.telegramcontest.ui.recycler.ChartNamesAdapter;
 import com.ng.telegramcontest.ui.view.DateSelectorView;
+import com.ng.telegramcontest.ui.view.SelectWindowView;
 
-public class DiagramActivity extends AppCompatActivity implements ChartNamesAdapter.SelectChartListener {
+public class DiagramActivity extends AppCompatActivity implements ChartNamesAdapter.SelectChartListener, SelectWindowView.BorderChangeListener {
 
     private final static String CHART_NUMBER = "CHART_NUMBER";
 
@@ -88,6 +89,12 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
         mDateSelectorView.changeSelect(selectedCharts);
     }
 
+
+    @Override
+    public void onBorderChange(SelectWindowView.Border border) {
+        Log.d("TAG", "Border change: " + border);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.statistics_menu, menu);
@@ -102,5 +109,17 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onPause() {
+        mDateSelectorView.addOnBorderChangeListener(null);
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mDateSelectorView.addOnBorderChangeListener(this);
     }
 }

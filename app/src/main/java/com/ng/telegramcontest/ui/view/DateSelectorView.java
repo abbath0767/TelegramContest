@@ -44,4 +44,8 @@ public class DateSelectorView extends RelativeLayout {
     public void changeSelect(boolean[] selectedCharts) {
         mSmallGraph.changeSelect(selectedCharts);
     }
+
+    public void addOnBorderChangeListener(SelectWindowView.BorderChangeListener listener) {
+        mSelectWindowView.addOnBorderChangeListener(listener);
+    }
 }

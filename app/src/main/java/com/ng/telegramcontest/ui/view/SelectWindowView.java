@@ -2,7 +2,7 @@ package com.ng.telegramcontest.ui.view;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RelativeLayout;
 
@@ -33,8 +33,9 @@ public class SelectWindowView extends RelativeLayout {
     private View leftBorderTouch;
     private View rightBorderTouch;
 
-    private float currentLeftBorder;
-    private float currentRightBorder;
+    private Border currentBorder;
+
+    private BorderChangeListener listener;
 
     private void inflateView(Context context) {
         View.inflate(context, R.layout.view_window_selector, this);
@@ -48,24 +49,102 @@ public class SelectWindowView extends RelativeLayout {
             @Override
             public void run() {
                 int allWidth = getWidth();
-                currentLeftBorder = (leftBorder.getWidth() * 100f) / (float) allWidth;
-                currentRightBorder = 100f - ((rightBorder.getWidth() * 100f) / (float) allWidth);
-                Log.d("TAG", "Current selection position: " + currentLeftBorder + " to " + currentRightBorder);
+                float currentLeftBorder = (leftBorder.getWidth() * 100f) / (float) allWidth;
+                float currentRightBorder = 100f - ((rightBorder.getWidth() * 100f) / (float) allWidth);
+                currentBorder = new Border(currentLeftBorder, currentRightBorder);
             }
         }, 1);
+
+        window.setOnTouchListener(new OnTouchListener() {
+            int tmpX = 0;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int x = (int) event.getRawX();
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        tmpX = x;
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        int delta = tmpX - x;
+
+                        RelativeLayout.LayoutParams paramsLeft = (RelativeLayout.LayoutParams) leftBorder.getLayoutParams();
+                        RelativeLayout.LayoutParams paramsRight = (RelativeLayout.LayoutParams) rightBorder.getLayoutParams();
+                        int toLeftValue = paramsLeft.width - delta;
+                        int toRightValue = paramsRight.width + delta;
+
+                        if (toLeftValue <= 0) {
+                            toLeftValue = 0;
+                        }
+                        if (toRightValue <= 0) {
+                            toRightValue = 0;
+                        }
+
+                        if (toLeftValue != 0 && toRightValue != 0) {
+                            paramsRight.width = toRightValue;
+                            rightBorder.setLayoutParams(paramsRight);
+                            paramsLeft.width = toLeftValue;
+                            leftBorder.setLayoutParams(paramsLeft);
+                        } else if (toLeftValue == 0) {
+                            paramsRight.width = getWidth() - window.getWidth();
+                            rightBorder.setLayoutParams(paramsRight);
+                            paramsLeft.width = 0;
+                            leftBorder.setLayoutParams(paramsLeft);
+                        } else {
+                            paramsRight.width = 0;
+                            rightBorder.setLayoutParams(paramsRight);
+                            paramsLeft.width = getWidth() - window.getWidth();
+                            leftBorder.setLayoutParams(paramsLeft);
+                        }
+
+                        tmpX = x;
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+
+                        if (listener != null) {
+                            float from = (window.getLeft() * 100f) / (float) getWidth();
+                            float to = (window.getRight() * 100f) / (float) getWidth();
+                            from = (float) (Math.round(from * 100.0) / 100.0);
+                            to = (float) (Math.round(to * 100.0) / 100.0);
+                            listener.onBorderChange(new Border(from, to));
+                        }
+
+                        tmpX = 0;
+                        return true;
+                }
+                return false;
+            }
+        });
     }
 
-    public Border getBorders() {
-        return new Border(currentLeftBorder, currentRightBorder);
+    public void addOnBorderChangeListener(BorderChangeListener listener) {
+        this.listener = listener;
+        if (currentBorder != null && listener != null) {
+            listener.onBorderChange(currentBorder);
+        }
     }
 
     public class Border {
         final float from;
         final float to;
 
-        public Border(float from, float to) {
+        private Border(float from, float to) {
             this.from = from;
             this.to = to;
         }
+
+        @Override
+        public String toString() {
+            return "Border{" +
+                    "from=" + from +
+                    ", to=" + to +
+                    '}';
+        }
+    }
+
+    public interface BorderChangeListener {
+        void onBorderChange(Border border);
     }
 }
