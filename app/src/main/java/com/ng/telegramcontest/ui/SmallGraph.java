@@ -11,6 +11,7 @@ import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 
 import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
@@ -37,12 +38,15 @@ public class SmallGraph extends View implements OnTaskExecuted {
         super(context, attrs, defStyleAttr, defStyleRes);
     }
 
+    private int lastAdded = -1;
+    private int lastRemoved = -1;
     private Paint mPaint = new Paint();
     private ChartData mChartData;
     private boolean[] selectedCharts;
     private long[][][] points;
+    private ValueAnimator alphaAnimator;
     private FirstCalculateAsyncTask mFirstCalculateAsyncTask;
-    private AnimateCalculateAsyncTask mAnimateCalculateAsyncTask;
+    //    private AnimateCalculateAsyncTask mAnimateCalculateAsyncTask;
     private long currentMaxY = 0;
     private long currentMinY = 0;
 
@@ -66,12 +70,13 @@ public class SmallGraph extends View implements OnTaskExecuted {
 
         for (int chartIndex = 0; chartIndex < points.length; chartIndex++) {
 
-            boolean needDraw = selectedCharts[chartIndex];
-            if (!needDraw) {
-                continue;
-            }
+//            boolean needDraw = selectedCharts[chartIndex];
+//            if (!needDraw) {
+//                continue;
+//            }
 
             mPaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex].getColor()));
+            mPaint.setAlpha(getAlphaFor(chartIndex));
             float previousX = 0;
             float previousY = 0;
 
@@ -92,7 +97,7 @@ public class SmallGraph extends View implements OnTaskExecuted {
 
     public void initData(final ChartData chartData, boolean[] selectedCharts) {
         this.mChartData = chartData;
-        this.selectedCharts = selectedCharts;
+        this.selectedCharts = selectedCharts.clone();
         currentMaxY = chartData.getMaxY();
         currentMinY = chartData.getMinY();
 
@@ -106,17 +111,60 @@ public class SmallGraph extends View implements OnTaskExecuted {
     }
 
     public void changeSelect(boolean[] selectedCharts) {
-        this.selectedCharts = selectedCharts;
+        Log.d("TAG", "Change select");
+        int oldCount = 0;
+        int newCount = 0;
+        for (boolean show : this.selectedCharts) {
+            if (show) {
+                oldCount++;
+            }
+        }
+
+        for (boolean show : selectedCharts) {
+            if (show) {
+                newCount++;
+            }
+        }
+
+        boolean added = newCount > oldCount;
+        if (added) {
+            lastRemoved = -1;
+            for (int i = 0; i < selectedCharts.length; i++) {
+                if (selectedCharts[i] && !this.selectedCharts[i]) {
+                    lastAdded = i;
+                    break;
+                }
+            }
+        } else {
+            lastAdded = -1;
+            for (int i = 0; i < selectedCharts.length; i++) {
+                if (!selectedCharts[i] && this.selectedCharts[i]) {
+                    lastRemoved = i;
+                    break;
+                }
+            }
+        }
+
+        this.selectedCharts = selectedCharts.clone();
         long newMax = mChartData.getMaxYFrom(selectedCharts);
         long newMin = mChartData.getMinYFrom(selectedCharts);
 
-        if (currentMaxY == -1 || currentMinY == -1) {
+        if ((currentMaxY == -1 || currentMinY == -1) && !added) {
             clearChart();
         } else if (currentMaxY == newMax && currentMinY == newMin) {
             invalidate();
         } else {
+            int alphaFrom = 255;
+            int alphaTo = 0;
+
+            if (added) {
+                alphaFrom = 0;
+                alphaTo = 255;
+            }
+
             final ValueAnimator min = ValueAnimator.ofFloat(currentMinY, newMin);
             final ValueAnimator max = ValueAnimator.ofFloat(currentMaxY, newMax);
+            alphaAnimator = ValueAnimator.ofInt(alphaFrom, alphaTo);
             min.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
@@ -137,7 +185,8 @@ public class SmallGraph extends View implements OnTaskExecuted {
                 }
             });
             AnimatorSet set = new AnimatorSet();
-            set.playTogether(min, max);
+            set.playTogether(min, max, alphaAnimator);
+            set.setInterpolator(new DecelerateInterpolator());
             set.start();
 
             currentMaxY = newMax;
@@ -145,7 +194,21 @@ public class SmallGraph extends View implements OnTaskExecuted {
         }
     }
 
+    private int getAlphaFor(int chartIndex) {
+        if (chartIndex == lastAdded) {
+            return (int) alphaAnimator.getAnimatedValue();
+        } else if (chartIndex == lastRemoved) {
+            return (int) alphaAnimator.getAnimatedValue();
+        } else if (selectedCharts[chartIndex])
+            return 255;
+        else
+            return 0;
+    }
+
     private void recalculateAndUpdateGraph(long currentMinValue, long currentMaxValue) {
+        if (currentMaxValue == 0)
+            return;
+
         DataSet[] dataSets = mChartData.getDataSets();
         long[][][] result = new long[dataSets.length][][];
         int count = mChartData.size();
