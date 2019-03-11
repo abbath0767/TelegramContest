@@ -7,6 +7,8 @@ public class ChartDataFactory {
     private long[] tmpValues = new long[10000];
     private int tmpIndex = 0;
     private List<DataSet> mDataSets = new ArrayList<DataSet>();
+    private long tmpMaxValue = -1;
+    private long tmpMinValue = -1;
 
     public void newChartData() {
     }
@@ -28,7 +30,7 @@ public class ChartDataFactory {
         int index = 0;
         DataSet x = null;
 
-        for (DataSet set: mDataSets) {
+        for (DataSet set : mDataSets) {
             if (set.getType().equals(DataSet.Type.X)) {
                 x = set;
             } else {
@@ -43,14 +45,29 @@ public class ChartDataFactory {
     public void addValue(long value) {
         tmpValues[tmpIndex] = value;
         tmpIndex++;
+
+        if (tmpMinValue == -1) {
+            tmpMinValue = value;
+        }
+
+        if (value > tmpMaxValue) {
+            tmpMaxValue = value;
+        }
+        if (value <= tmpMinValue) {
+            tmpMinValue = value;
+        }
     }
 
     public void pushValues() {
         DataSet dataSet = mDataSets.get(mDataSets.size() - 1);
         long[] values = new long[tmpIndex];
         System.arraycopy(tmpValues, 0, values, 0, tmpIndex);
-        tmpIndex = 0;
         dataSet.setValues(values);
+        dataSet.setMinValue(tmpMinValue);
+        dataSet.setMaxValue(tmpMaxValue);
+        tmpIndex = 0;
+        tmpMaxValue = -1;
+        tmpMinValue = -1;
     }
 
     //useless?

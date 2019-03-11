@@ -20,12 +20,9 @@ public class ChartNamesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     private DataSet[] mChartNames;
     private boolean[] selected;
 
-    public void updateNames(DataSet[] mDataSets) {
+    public void setNames(DataSet[] mDataSets, boolean[] selectedCharts) {
         this.mChartNames = mDataSets;
-        selected = new boolean[mDataSets.length];
-        for (int i = 0; i < selected.length; i++) {
-            selected[i] = true;
-        }
+        selected = selectedCharts;
         this.notifyDataSetChanged();
     }
 

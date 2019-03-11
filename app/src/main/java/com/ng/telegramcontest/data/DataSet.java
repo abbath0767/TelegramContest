@@ -10,6 +10,8 @@ public class DataSet {
     private String entityName;
     @Nullable
     private String color;
+    private long minValue;
+    private long maxValue;
 
     public DataSet(long[] values, Type type, String name, @Nullable String color) {
         this.values = values;
@@ -58,6 +60,22 @@ public class DataSet {
 
     public void setEntityName(String entityName) {
         this.entityName = entityName;
+    }
+
+    public long getMinValue() {
+        return minValue;
+    }
+
+    public void setMinValue(long minValue) {
+        this.minValue = minValue;
+    }
+
+    public long getMaxValue() {
+        return maxValue;
+    }
+
+    public void setMaxValue(long maxValue) {
+        this.maxValue = maxValue;
     }
 
     enum Type {

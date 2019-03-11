@@ -25,7 +25,9 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
     private DataStorage mDataStorage;
     private ChartData mChartData;
     private int chartNumber = 0;
+    private boolean[] selectedCharts;
 
+    private DateSelectorView mDateSelectorView;
     private RecyclerView mRecyclerView;
     private ChartNamesAdapter mChartNamesAdapter;
 
@@ -48,8 +50,12 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
 
         mDataStorage = ((App) getApplicationContext()).getDataStorage();
         mChartData = mDataStorage.getCharts().getChartsData()[chartNumber];
+        selectedCharts = new boolean[mChartData.getDataSets().length];
+        for (int i = 0; i < selectedCharts.length; i++) {
+            selectedCharts[i] = true;
+        }
 
-        setCharNames();
+        initViewData();
     }
 
     private void setViews() {
@@ -57,10 +63,13 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mChartNamesAdapter = new ChartNamesAdapter(this, this);
         mRecyclerView.setAdapter(mChartNamesAdapter);
+
+        mDateSelectorView = (DateSelectorView) findViewById(R.id.date_selector_view);
     }
 
-    private void setCharNames() {
-        mChartNamesAdapter.updateNames(mChartData.getDataSets());
+    private void initViewData() {
+        mChartNamesAdapter.setNames(mChartData.getDataSets(), selectedCharts);
+        mDateSelectorView.initData(mChartData, selectedCharts);
     }
 
     private void setActionBar() {
@@ -70,7 +79,12 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
 
     @Override
     public void onChartSelect(int chartIndex, boolean isSelect) {
-        Log.d("TAG", "Chart select change. index: " + chartIndex + ", value: " + isSelect);
+        selectedCharts[chartIndex] = isSelect;
+        changeSelect();
+    }
+
+    private void changeSelect() {
+        mDateSelectorView.changeSelect(selectedCharts);
     }
 
     @Override

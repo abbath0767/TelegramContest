@@ -14,10 +14,15 @@
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"/>
 
+    <com.ng.telegramcontest.ui.DateSelectorView
+        android:id="@+id/date_selector_view"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/common_48"/>
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/chars_name_recycler"
-        android:background="@color/white"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:background="@color/white"/>
 
 </LinearLayout>
