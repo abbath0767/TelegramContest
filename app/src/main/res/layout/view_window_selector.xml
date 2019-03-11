@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+       xmlns:tools="http://schemas.android.com/tools"
+       android:layout_width="match_parent"
+       android:layout_height="@dimen/common_56"
+       tools:parentTag="android.widget.RelativeLayout">
+
+    <View
+        android:id="@+id/left_border"
+        android:layout_width="210dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentLeft="true"
+        android:background="@color/colorBorer"
+        />
+
+    <View
+        android:id="@+id/right_border"
+        android:layout_width="30dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentRight="true"
+        android:background="@color/colorBorer"
+        />
+
+    <View
+        android:id="@+id/left_border_touch"
+        android:layout_height="match_parent"
+        android:layout_width="@dimen/common_16"
+        android:layout_toRightOf="@id/left_border"
+        android:layout_marginLeft="@dimen/common_minus_8"
+        />
+
+    <View
+        android:id="@+id/right_border_touch"
+        android:layout_height="match_parent"
+        android:layout_width="@dimen/common_16"
+        android:layout_toLeftOf="@id/right_border"
+        android:layout_marginRight="@dimen/common_minus_8"
+        />
+
+    <View
+        android:id="@+id/window"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_toLeftOf="@id/right_border"
+        android:layout_toRightOf="@id/left_border"
+        android:background="@drawable/bg_window"
+        />
+</merge>

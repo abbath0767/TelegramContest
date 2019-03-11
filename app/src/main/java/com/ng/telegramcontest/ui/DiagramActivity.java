@@ -17,6 +17,7 @@ import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
 import com.ng.telegramcontest.data.DataStorage;
 import com.ng.telegramcontest.ui.recycler.ChartNamesAdapter;
+import com.ng.telegramcontest.ui.view.DateSelectorView;
 
 public class DiagramActivity extends AppCompatActivity implements ChartNamesAdapter.SelectChartListener {
 

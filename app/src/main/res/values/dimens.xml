@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <dimen name="common_minus_2">-2dp</dimen>
     <dimen name="common_1">1dp</dimen>
     <dimen name="common_2">2dp</dimen>
+    <dimen name="common_4">4dp</dimen>
     <dimen name="common_8">8dp</dimen>
     <dimen name="common_16">16dp</dimen>
     <dimen name="common_32">32dp</dimen>
     <dimen name="common_48">48dp</dimen>
+    <dimen name="common_56">56dp</dimen>
     <dimen name="common_16sp">16sp</dimen>
+    <dimen name="common_minus_8">-8dp</dimen>
 </resources>

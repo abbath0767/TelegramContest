@@ -1,4 +1,4 @@
-package com.ng.telegramcontest.ui;
+package com.ng.telegramcontest.ui.view;
 
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
@@ -16,6 +16,8 @@ import android.view.animation.DecelerateInterpolator;
 import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
 import com.ng.telegramcontest.data.DataSet;
+
+import java.lang.ref.WeakReference;
 
 import static com.ng.telegramcontest.util.CalculateHelper.getCordValues;
 import static com.ng.telegramcontest.util.CalculateHelper.getPrepared;
@@ -50,7 +52,7 @@ public class SmallGraph extends View implements OnTaskExecuted {
     private long currentMinY = 0;
 
     {
-        mPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_2));
+        mPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_1));
     }
 
     @Override
@@ -68,12 +70,6 @@ public class SmallGraph extends View implements OnTaskExecuted {
         }
 
         for (int chartIndex = 0; chartIndex < points.length; chartIndex++) {
-
-//            boolean needDraw = selectedCharts[chartIndex];
-//            if (!needDraw) {
-//                continue;
-//            }
-
             mPaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex].getColor()));
             mPaint.setAlpha(getAlphaFor(chartIndex));
             float previousX = 0;
@@ -175,6 +171,11 @@ public class SmallGraph extends View implements OnTaskExecuted {
                 alphaTo = 255;
             }
 
+            Log.d("TAG", "New MIN: " + newMin);
+            Log.d("TAG", "New MAX: " + newMax);
+            Log.d("TAG", "Current MIN: " + currentMinY);
+            Log.d("TAG", "Current MAX: " + currentMaxY);
+
             final ValueAnimator min = ValueAnimator.ofFloat(currentMinY, newMin);
             final ValueAnimator max = ValueAnimator.ofFloat(currentMaxY, newMax);
             alphaAnimator = ValueAnimator.ofInt(alphaFrom, alphaTo);
@@ -219,6 +220,8 @@ public class SmallGraph extends View implements OnTaskExecuted {
     }
 
     private void recalculateAndUpdateGraph(long currentMinValue, long currentMaxValue) {
+        Log.d("TAG", "REC new currentMaxValue: " + currentMaxValue);
+        Log.d("TAG", "REC new currentMinValue: " + currentMinValue);
         if (currentMaxValue == 0)
             return;
 
@@ -238,10 +241,20 @@ public class SmallGraph extends View implements OnTaskExecuted {
             preparedY[indexChart] = getPrepared(count, dataSets[indexChart], currentMinValue);
         }
 
+        //find y max
+//        long preparedYMax = -1;
+//        for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
+//            for (int i = 0; i < count; i++) {
+//                if (preparedYMax < preparedY[indexChart][i]) {
+//                    preparedYMax = preparedY[indexChart][i];
+//                }
+//            }
+//        }
+
         long[][] yValues = new long[dataSets.length][];
         //transform y values to screen height
         for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-            yValues[indexChart] = getCordValues(count, preparedY[indexChart], currentMaxValue, getHeight());
+            yValues[indexChart] = getCordValues(count, preparedY[indexChart], currentMaxValue - currentMinValue, getHeight());
         }
 
         //fill points
@@ -266,13 +279,13 @@ public class SmallGraph extends View implements OnTaskExecuted {
 
         private final long width;
         private final long height;
-        private final OnTaskExecuted listener;
+        private final WeakReference<OnTaskExecuted> listener;
         private final ChartData chartData;
 
         FirstCalculateAsyncTask(long width, long height, ChartData chartData, OnTaskExecuted listener) {
             this.width = width;
             this.height = height;
-            this.listener = listener;
+            this.listener = new WeakReference<OnTaskExecuted>(listener);
             this.chartData = chartData;
         }
 
@@ -323,147 +336,11 @@ public class SmallGraph extends View implements OnTaskExecuted {
                 }
             }
 
-            listener.doOnExecutedInit(result);
+            OnTaskExecuted weak = listener.get();
+            if (weak != null) {
+                weak.doOnExecutedInit(result);
+            }
             return null;
         }
     }
-
-//    @Deprecated()
-//    private static class AnimateCalculateAsyncTask extends AsyncTask<DataForChange, AnimateCalculateAsyncTask.UpdatePoints, Void> {
-//
-//        private final long width;
-//        private final long height;
-//        private final OnTaskExecuted listener;
-//        private final ChartData chartData;
-//        private boolean[] selectedCharts;
-//        private long oldMaxY;
-//        private long newMaxY;
-//        private long oldMinY;
-//        private long newMinY;
-//        private static int STEP_COUNT = 30;
-//        private long[][][] result;
-//        private long[] xValues;
-//
-//        AnimateCalculateAsyncTask(long width, long height, ChartData chartData, OnTaskExecuted listener) {
-//            this.width = width;
-//            this.height = height;
-//            this.listener = listener;
-//            this.chartData = chartData;
-//            selectedCharts = new boolean[chartData.getDataSets().length];
-//        }
-//
-//        @Override
-//        protected void onPreExecute() {
-//            DataSet[] dataSets = chartData.getDataSets();
-//            result = new long[dataSets.length][][];
-//            DataSet x = chartData.getX();
-//            int count = chartData.size();
-//
-//            //prepare x values for transformation with min value
-//            long[] preparedX = getPrepared(count, x, x.getMinValue());
-//            //x values is sorted! find X max
-//            long preparedXMax = preparedX[count - 1];
-//            //transform x to screen width
-//            xValues = getCordValues(count, preparedX, preparedXMax, width);
-//
-//            super.onPreExecute();
-//        }
-//
-//        @Override
-//        protected Void doInBackground(DataForChange... data) {
-//            fillData(data[0]);
-//            DataSet[] dataSets = chartData.getDataSets();
-//            result = new long[dataSets.length][][];
-//            int count = chartData.size();
-//
-//            long stepValueMax = (oldMaxY - newMaxY) / STEP_COUNT;
-//            long stepValueMin = (oldMinY - newMinY) / STEP_COUNT;
-//
-//            for (int step = 0; step < STEP_COUNT + 1; step++) {
-//                long currentMaxValue;
-//                long currentMinValue;
-//                if (step == STEP_COUNT) {
-//                    currentMaxValue = newMaxY;
-//                    currentMinValue = newMinY;
-//                } else {
-//                    currentMaxValue = oldMaxY - step * stepValueMax;
-//                    currentMinValue = oldMinY - step * stepValueMin;
-//                }
-//
-//                long[][] preparedY = new long[dataSets.length][];
-//                for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-//                    preparedY[indexChart] = getPrepared(count, dataSets[indexChart], currentMinValue);
-//                }
-//
-//                long[][] yValues = new long[dataSets.length][];
-//                //transform y values to screen height
-//                for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-//                    yValues[indexChart] = getCordValues(count, preparedY[indexChart], currentMaxValue, height);
-//                }
-//
-//                //fill points
-//                for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-//                    result[indexChart] = new long[count][2];
-//
-//                    for (int i = 0; i < count; i++) {
-//                        result[indexChart][i][0] = xValues[i];
-//                        result[indexChart][i][1] = yValues[indexChart][i];
-//                    }
-//                }
-//
-//                Log.d("TAG", "Push data! " + result.length);
-//                publishProgress(new UpdatePoints(result));
-//
-//                try {
-//                    Thread.sleep(3);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//
-////                listener.doOnExecutedInit(result);
-//            }
-//
-//            return null;
-//        }
-//
-//        @Override
-//        protected void onProgressUpdate(UpdatePoints... values) {
-//            super.onProgressUpdate(values);
-//            Log.d("TAG", "on progreess update! " + values[0].points.length);
-//            listener.doOnExecutedInit(values[0].points);
-//        }
-//
-//        private void fillData(DataForChange data) {
-//            selectedCharts = data.selectedCharts;
-//            oldMaxY = data.oldMaxY;
-//            newMaxY = data.newMaxY;
-//            oldMinY = data.oldMinY;
-//            newMinY = data.newMinY;
-//        }
-//
-//
-//        class UpdatePoints {
-//            final long[][][] points;
-//
-//            private UpdatePoints(long[][][] points) {
-//                this.points = points;
-//            }
-//        }
-//    }
-
-//    private class DataForChange {
-//        final boolean[] selectedCharts;
-//        final long oldMaxY;
-//        final long newMaxY;
-//        final long oldMinY;
-//        final long newMinY;
-//
-//        private DataForChange(boolean[] selectedCharts, long oldMaxY, long newMaxY, long oldMinY, long newMinY) {
-//            this.selectedCharts = selectedCharts;
-//            this.oldMaxY = oldMaxY;
-//            this.newMaxY = newMaxY;
-//            this.oldMinY = oldMinY;
-//            this.newMinY = newMinY;
-//        }
-//    }
 }
