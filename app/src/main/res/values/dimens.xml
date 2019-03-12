@@ -11,4 +11,5 @@
     <dimen name="common_56">56dp</dimen>
     <dimen name="common_16sp">16sp</dimen>
     <dimen name="common_minus_8">-8dp</dimen>
+    <dimen name="common_minus_16">-16dp</dimen>
 </resources>

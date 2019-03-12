@@ -171,11 +171,6 @@ public class SmallGraph extends View implements OnTaskExecuted {
                 alphaTo = 255;
             }
 
-            Log.d("TAG", "New MIN: " + newMin);
-            Log.d("TAG", "New MAX: " + newMax);
-            Log.d("TAG", "Current MIN: " + currentMinY);
-            Log.d("TAG", "Current MAX: " + currentMaxY);
-
             final ValueAnimator min = ValueAnimator.ofFloat(currentMinY, newMin);
             final ValueAnimator max = ValueAnimator.ofFloat(currentMaxY, newMax);
             alphaAnimator = ValueAnimator.ofInt(alphaFrom, alphaTo);
@@ -220,8 +215,6 @@ public class SmallGraph extends View implements OnTaskExecuted {
     }
 
     private void recalculateAndUpdateGraph(long currentMinValue, long currentMaxValue) {
-        Log.d("TAG", "REC new currentMaxValue: " + currentMaxValue);
-        Log.d("TAG", "REC new currentMinValue: " + currentMinValue);
         if (currentMaxValue == 0)
             return;
 
@@ -240,16 +233,6 @@ public class SmallGraph extends View implements OnTaskExecuted {
         for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
             preparedY[indexChart] = getPrepared(count, dataSets[indexChart], currentMinValue);
         }
-
-        //find y max
-//        long preparedYMax = -1;
-//        for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-//            for (int i = 0; i < count; i++) {
-//                if (preparedYMax < preparedY[indexChart][i]) {
-//                    preparedYMax = preparedY[indexChart][i];
-//                }
-//            }
-//        }
 
         long[][] yValues = new long[dataSets.length][];
         //transform y values to screen height
@@ -275,6 +258,7 @@ public class SmallGraph extends View implements OnTaskExecuted {
         invalidate();
     }
 
+    //calculated time is 0 ms. mb remove AsyncTask and calculate in main thread?
     private static class FirstCalculateAsyncTask extends AsyncTask<Void, Void, Void> {
 
         private final long width;

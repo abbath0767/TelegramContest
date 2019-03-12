@@ -99,24 +99,132 @@ public class SelectWindowView extends RelativeLayout {
                         }
 
                         tmpX = x;
+                        pushChangeBorder();
                         return true;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
 
-                        if (listener != null) {
-                            float from = (window.getLeft() * 100f) / (float) getWidth();
-                            float to = (window.getRight() * 100f) / (float) getWidth();
-                            from = (float) (Math.round(from * 100.0) / 100.0);
-                            to = (float) (Math.round(to * 100.0) / 100.0);
-                            listener.onBorderChange(new Border(from, to));
-                        }
-
+                        pushChangeBorder();
                         tmpX = 0;
                         return true;
                 }
                 return false;
             }
         });
+
+        leftBorderTouch.setOnTouchListener(new OnTouchListener() {
+            int tmpX = 0;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int x = (int) event.getRawX();
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN: {
+                        tmpX = x;
+                        return true;
+                    }
+                    case MotionEvent.ACTION_MOVE: {
+                        int delta = tmpX - x;
+
+                        RelativeLayout.LayoutParams paramsLeft = (RelativeLayout.LayoutParams) leftBorder.getLayoutParams();
+                        RelativeLayout.LayoutParams paramsWindow = (RelativeLayout.LayoutParams) window.getLayoutParams();
+                        int toLeftValue = paramsLeft.width - delta;
+                        int windowWidth = paramsWindow.width + delta;
+
+                        if (toLeftValue <= 0) {
+                            toLeftValue = 0;
+                        }
+
+                        if ((toLeftValue + rightBorder.getWidth()) > getWidth() * 0.9) {
+                            tmpX = x;
+                            return true;
+                        }
+
+                        if (toLeftValue != 0) {
+                            paramsLeft.width = toLeftValue;
+                            leftBorder.setLayoutParams(paramsLeft);
+                            paramsWindow.width = windowWidth;
+                            window.setLayoutParams(paramsWindow);
+                        }
+
+                        tmpX = x;
+                        pushChangeBorder();
+                        return true;
+                    }
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL: {
+                        pushChangeBorder();
+                        tmpX = 0;
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        });
+        rightBorderTouch.setOnTouchListener(new OnTouchListener() {
+            int tmpX = 0;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int x = (int) event.getRawX();
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN: {
+                        tmpX = x;
+                        return true;
+                    }
+                    case MotionEvent.ACTION_MOVE: {
+                        int delta = tmpX - x;
+
+                        RelativeLayout.LayoutParams paramsRight = (RelativeLayout.LayoutParams) rightBorder.getLayoutParams();
+                        RelativeLayout.LayoutParams paramsWindow = (RelativeLayout.LayoutParams) window.getLayoutParams();
+
+                        int toRightValue = paramsRight.width + delta;
+                        int windowWidth = paramsWindow.width - delta;
+
+                        if (toRightValue <= 0) {
+                            toRightValue = 0;
+                        }
+
+                        if ((toRightValue + leftBorder.getWidth()) > getWidth() * 0.9) {
+                            tmpX = x;
+                            return true;
+                        }
+
+                        if (toRightValue != 0) {
+                            paramsRight.width = toRightValue;
+                            rightBorder.setLayoutParams(paramsRight);
+                            paramsWindow.width = windowWidth;
+                            window.setLayoutParams(paramsWindow);
+                        }
+
+                        tmpX = x;
+                        pushChangeBorder();
+                        return true;
+                    }
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL: {
+                        pushChangeBorder();
+                        tmpX = 0;
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        });
+    }
+
+    private void pushChangeBorder() {
+        if (listener != null) {
+            float from = (window.getLeft() * 100f) / (float) getWidth();
+            float to = (window.getRight() * 100f) / (float) getWidth();
+            from = (float) (Math.round(from * 100.0) / 100.0);
+            to = (float) (Math.round(to * 100.0) / 100.0);
+            listener.onBorderChange(new Border(from, to));
+        }
     }
 
     public void addOnBorderChangeListener(BorderChangeListener listener) {
