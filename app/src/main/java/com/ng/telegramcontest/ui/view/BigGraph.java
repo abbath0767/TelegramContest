@@ -45,7 +45,6 @@ public class BigGraph extends View {
     private int diff;
     private int from;
     private int to;
-//    private int[] drawDatePos;
     private float[] drawDataCord;
     private ValueAnimator diffAnimator;
     private ChangeBorderType mChangeBorderType;
@@ -124,24 +123,22 @@ public class BigGraph extends View {
                 mChangeBorderType = ChangeBorderType.EXTEND;
             }
         } else {
-//            drawDatePos = new int[5];
             drawDataCord = new float[5];
-            int step = (to - from) / 5;
             int width = getWidth();
             float stepCoord = width / 5f;
             for (int i = 0; i < 5; i++) {
-//                drawDatePos[i] = from + step * (i + 1);
+                //calculate draw pos
                 drawDataCord[i] = stepCoord * (i + 1) - stepCoord / 2f;
             }
 
-//            Log.d("TAG", "draw data pos: " + Arrays.toString(drawDatePos));
             Log.d("TAG", "draw data coord: " + Arrays.toString(drawDataCord));
 
             Handler h = new Handler();
             h.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    pushBorderChange(new SelectWindowView.Border(border.fromX - 5, border.toX - 5));
+//                    pushBorderChange(new SelectWindowView.Border(border.fromX - 5, border.toX - 5));
+                    pushBorderChange(new SelectWindowView.Border(border.fromX + 5, border.toX + 5));
                 }
             }, 3000);
         }
@@ -152,6 +149,7 @@ public class BigGraph extends View {
     }
 
     private void borderMove(int diff) {
+        final boolean toRight = diff > 0;
         final int len = to - from;
         diffAnimator = ValueAnimator.ofFloat(0f, diff);
         diffAnimator.setInterpolator(new LinearInterpolator());
@@ -162,9 +160,25 @@ public class BigGraph extends View {
             public void onAnimationUpdate(ValueAnimator animation) {
                 float animatedDiff = (float) animation.getAnimatedValue() - tmpValue;
                 for (int i = 0; i < drawDataCord.length; i++) {
-//                    drawDatePos[i] = drawDatePos[i] + animatedDiff;
                     drawDataCord[i] = drawDataCord[i] + (animatedDiff * getWidth() / len);
                 }
+
+                if (toRight) {
+                    if (drawDataCord[drawDataCord.length - 1] > getWidth()) {
+                        for (int i = drawDataCord.length - 1; i > 0; i--) {
+                            drawDataCord[i] = drawDataCord[i - 1];
+                        }
+                        drawDataCord[0] = drawDataCord[1] - getWidth() / 5f;
+                    }
+                } else {
+                    if (drawDataCord[0] < 0) {
+                        for (int i = 0; i < drawDataCord.length - 1; i++) {
+                            drawDataCord[i] = drawDataCord[i + 1];
+                        }
+                        drawDataCord[drawDataCord.length - 1] = drawDataCord[drawDataCord.length - 2] + getWidth() / 5f;
+                    }
+                }
+
                 tmpValue = animatedDiff;
                 postInvalidateOnAnimation();
             }
