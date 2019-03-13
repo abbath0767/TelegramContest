@@ -5,16 +5,14 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 
 import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
-
-import java.util.Arrays;
 
 public class BigGraph extends View {
 
@@ -42,7 +40,9 @@ public class BigGraph extends View {
     private Paint mSeparatorPaint;
     private ChartData mChartData;
     private boolean[] mSelectedCharts;
-    private int diff;
+    private int diffX;
+    private int previousDiffX = 0;
+    private float previousEnd = 0f;
     private int from;
     private int to;
     private float[] drawDataCord;
@@ -100,28 +100,33 @@ public class BigGraph extends View {
         }
     }
 
-    //TODO change 5 to 7!
     public void pushBorderChange(final SelectWindowView.Border border) {
         if (mChartData == null)
             return;
 
-        Log.d("TAG", "BIG GRAPH. Push border change");
         int tmpFrom = from;
         int tmpTo = to;
         from = border.fromX;
         to = border.toX;
+
+//        Log.d("TAG", "BIG GRAPH. Push border change.");
 
         if (!firstBorderPush) {
             int diffFrom = tmpFrom - from;
             int diffTo = tmpTo - to;
 
             if (diffFrom == diffTo) {
-                diff = tmpFrom - from;
-                Log.d("TAG", "MOVE");
+                diffX = tmpFrom - from;
+//                Log.d("TAG", "MOVE");
                 mChangeBorderType = ChangeBorderType.MOVE;
-                borderMove(diff);
+                if (diffX == 0) {
+//                    Log.d("TAG", "MOVE. diff = 0");
+                    postInvalidateOnAnimation();
+                    return;
+                }
+                borderMove(diffX);
             } else {
-                Log.d("TAG", "EXTEND");
+//                Log.d("TAG", "EXTEND");
                 mChangeBorderType = ChangeBorderType.EXTEND;
             }
         } else {
@@ -133,25 +138,37 @@ public class BigGraph extends View {
                 drawDataCord[i] = stepCoord * (i + 1) - stepCoord / 2f;
             }
 
-            Log.d("TAG", "draw data coord: " + Arrays.toString(drawDataCord));
+//            Log.d("TAG", "draw data coord: " + Arrays.toString(drawDataCord));
+            firstBorderPush = false;
         }
-
-        firstBorderPush = false;
 
         postInvalidateOnAnimation();
     }
 
-    private void borderMove(int diff) {
+    private void borderMove(final int diff) {
         final boolean toRight = diff > 0;
         final int len = to - from;
-        diffAnimator = ValueAnimator.ofFloat(0f, diff);
-        diffAnimator.setInterpolator(new LinearInterpolator());
+
+        if (diffAnimator == null) {
+            previousDiffX = diff;
+            diffAnimator = ValueAnimator.ofFloat(0f, diff);
+//            diffAnimator.setInterpolator(new LinearInterpolator());
+        } else {
+            previousEnd += (float) diffAnimator.getAnimatedValue();
+            diffAnimator.removeAllUpdateListeners();
+            diffAnimator.cancel();
+            diffAnimator = ValueAnimator.ofFloat(0f, diff + previousDiffX - previousEnd);
+//            diffAnimator.setInterpolator(new LinearInterpolator());
+            previousDiffX = diff + previousDiffX;
+        }
+
         diffAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             float tmpValue = 0;
 
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 float animatedDiff = (float) animation.getAnimatedValue() - tmpValue;
+                tmpValue = (float) animation.getAnimatedValue();
                 for (int i = 0; i < drawDataCord.length; i++) {
                     drawDataCord[i] = drawDataCord[i] + (animatedDiff * getWidth() / len);
                 }
@@ -172,7 +189,6 @@ public class BigGraph extends View {
                     }
                 }
 
-                tmpValue = animatedDiff;
                 postInvalidateOnAnimation();
             }
         });
@@ -187,6 +203,78 @@ public class BigGraph extends View {
         currentMax = mChartData.getMaxY();
         currentMin = mChartData.getMinY();
         dataIsInit = true;
+
+//        testSwipeLeft();
+//        testSwipeRight();
+    }
+
+    private void testSwipeLeft() {
+        Handler h = new Handler();
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from - 1, to - 1));
+            }
+        }, 3000);
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from - 2, to - 2));
+            }
+        }, 3030);
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from - 3, to - 3));
+            }
+        }, 3050);
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from - 4, to - 4));
+            }
+        }, 3080);
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from - 5, to - 5));
+            }
+        }, 3140);
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from - 5, to - 5));
+//                testSwipeRight();
+            }
+        }, 3500);
+    }
+
+    private void testSwipeRight() {
+        Handler h = new Handler();
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from + 1, to + 1));
+            }
+        }, 3000);
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from + 1, to + 1));
+            }
+        }, 3030);
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from + 2, to + 2));
+            }
+        }, 3050);
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                pushBorderChange(new SelectWindowView.Border(from + 1, to + 1));
+            }
+        }, 3150);
     }
 
     public void changeSelect(boolean[] selectedCharts) {
