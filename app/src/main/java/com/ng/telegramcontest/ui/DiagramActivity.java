@@ -17,6 +17,7 @@ import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
 import com.ng.telegramcontest.data.DataStorage;
 import com.ng.telegramcontest.ui.recycler.ChartNamesAdapter;
+import com.ng.telegramcontest.ui.view.BigGraph;
 import com.ng.telegramcontest.ui.view.DateSelectorView;
 import com.ng.telegramcontest.ui.view.SelectWindowView;
 
@@ -30,6 +31,7 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
     private boolean[] selectedCharts;
 
     private DateSelectorView mDateSelectorView;
+    private BigGraph mBigGraph;
     private RecyclerView mRecyclerView;
     private ChartNamesAdapter mChartNamesAdapter;
 
@@ -67,11 +69,14 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
         mRecyclerView.setAdapter(mChartNamesAdapter);
 
         mDateSelectorView = (DateSelectorView) findViewById(R.id.date_selector_view);
+
+        mBigGraph = (BigGraph) findViewById(R.id.big_graph);
     }
 
     private void initViewData() {
         mChartNamesAdapter.setNames(mChartData.getDataSets(), selectedCharts);
         mDateSelectorView.initData(mChartData, selectedCharts);
+        mBigGraph.initData(mChartData, selectedCharts);
     }
 
     private void setActionBar() {
@@ -87,12 +92,13 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
 
     private void changeSelect() {
         mDateSelectorView.changeSelect(selectedCharts);
+        mBigGraph.changeSelect(selectedCharts);
     }
 
 
     @Override
     public void onBorderChange(SelectWindowView.Border border) {
-        Log.d("TAG", "Border change: " + border);
+        mBigGraph.pushBorderChange(border);
     }
 
     @Override

@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.RelativeLayout;
 
 import com.ng.telegramcontest.R;
+import com.ng.telegramcontest.data.DataSet;
 
 public class SelectWindowView extends RelativeLayout {
 
@@ -32,8 +33,9 @@ public class SelectWindowView extends RelativeLayout {
     private View window;
     private View leftBorderTouch;
     private View rightBorderTouch;
-
     private Border currentBorder;
+
+    private DataSet x;
 
     private BorderChangeListener listener;
 
@@ -44,16 +46,6 @@ public class SelectWindowView extends RelativeLayout {
         window = findViewById(R.id.window);
         leftBorderTouch = findViewById(R.id.left_border_touch);
         rightBorderTouch = findViewById(R.id.right_border_touch);
-
-        postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                int allWidth = getWidth();
-                float currentLeftBorder = (leftBorder.getWidth() * 100f) / (float) allWidth;
-                float currentRightBorder = 100f - ((rightBorder.getWidth() * 100f) / (float) allWidth);
-                currentBorder = new Border(currentLeftBorder, currentRightBorder);
-            }
-        }, 1);
 
         window.setOnTouchListener(new OnTouchListener() {
             int tmpX = 0;
@@ -111,7 +103,6 @@ public class SelectWindowView extends RelativeLayout {
                 return false;
             }
         });
-
         leftBorderTouch.setOnTouchListener(new OnTouchListener() {
             int tmpX = 0;
 
@@ -215,15 +206,36 @@ public class SelectWindowView extends RelativeLayout {
                 return false;
             }
         });
+
+        window.addOnLayoutChangeListener(new OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                window.removeOnLayoutChangeListener(this);
+                pushChangeBorder();
+            }
+        });
+    }
+
+    public void initData(final DataSet x) {
+        this.x = x;
+
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                int size = x.getValues().length;
+                int fromX = (window.getLeft() * size / getWidth());
+                int toX = (window.getRight() * size / getWidth());
+                currentBorder = new Border(fromX, toX);
+            }
+        }, 1);
     }
 
     private void pushChangeBorder() {
         if (listener != null) {
-            float from = (window.getLeft() * 100f) / (float) getWidth();
-            float to = (window.getRight() * 100f) / (float) getWidth();
-            from = (float) (Math.round(from * 100.0) / 100.0);
-            to = (float) (Math.round(to * 100.0) / 100.0);
-            listener.onBorderChange(new Border(from, to));
+            int size = x.getValues().length;
+            int fromX = (window.getLeft() * size / getWidth());
+            int toX = (window.getRight() * size / getWidth());
+            listener.onBorderChange(new Border(fromX, toX));
         }
     }
 
@@ -234,20 +246,21 @@ public class SelectWindowView extends RelativeLayout {
         }
     }
 
-    public class Border {
-        final float from;
-        final float to;
+    //from: x index from, to: x index to
+    public static class Border {
+        final int fromX;
+        final int toX;
 
-        private Border(float from, float to) {
-            this.from = from;
-            this.to = to;
+        public Border(int from, int to) {
+            this.fromX = from;
+            this.toX = to;
         }
 
         @Override
         public String toString() {
             return "Border{" +
-                    "from=" + from +
-                    ", to=" + to +
+                    "fromX index=" + fromX +
+                    ", toX index=" + toX +
                     '}';
         }
     }

@@ -39,6 +39,7 @@ public class DateSelectorView extends RelativeLayout {
 
     public void initData(ChartData chartData, boolean[] selectedCharts) {
         mSmallGraph.initData(chartData, selectedCharts);
+        mSelectWindowView.initData(chartData.getX());
     }
 
     public void changeSelect(boolean[] selectedCharts) {
