@@ -5,7 +5,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -20,6 +19,7 @@ import java.util.Arrays;
 public class BigGraph extends View {
 
     private final static String FOLLOWERS = "Followers";
+    private final static int POINT_COUNT = 7;
 
     public BigGraph(Context context) {
         this(context, null);
@@ -53,6 +53,8 @@ public class BigGraph extends View {
     private boolean dataIsInit = false;
     private boolean firstBorderPush = true;
 
+    private float density = getResources().getDisplayMetrics().density;
+
     //todo test
     private Paint testPaint;
 
@@ -73,10 +75,11 @@ public class BigGraph extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        Log.d("TAG", "ON DRAW");
+        Log.d("TAG", "ON DRAW.");
         float bottomBorderY = getHeight() - getHeight() / 10.0f;
         float topBorderY = getHeight() - getHeight() * 0.9f;
-        canvas.drawText(FOLLOWERS, 0, topBorderY, mTextPaint);
+        float leftBorder = ((getWidth() - ((getWidth() / 1.3f))) / 2) + 16 * density;
+        canvas.drawText(FOLLOWERS, leftBorder, topBorderY, mTextPaint);
         canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
 
         if (!dataIsInit) {
@@ -97,7 +100,7 @@ public class BigGraph extends View {
         }
     }
 
-    //todo refactor from/to from % to xPos
+    //TODO change 5 to 7!
     public void pushBorderChange(final SelectWindowView.Border border) {
         if (mChartData == null)
             return;
@@ -114,33 +117,23 @@ public class BigGraph extends View {
 
             if (diffFrom == diffTo) {
                 diff = tmpFrom - from;
-                Log.d("TAG", "MOVE. from:" + from + ", to: " + to + ", diff: " + diff);
+                Log.d("TAG", "MOVE");
                 mChangeBorderType = ChangeBorderType.MOVE;
-
                 borderMove(diff);
             } else {
                 Log.d("TAG", "EXTEND");
                 mChangeBorderType = ChangeBorderType.EXTEND;
             }
         } else {
-            drawDataCord = new float[5];
+            drawDataCord = new float[POINT_COUNT];
             int width = getWidth();
-            float stepCoord = width / 5f;
-            for (int i = 0; i < 5; i++) {
+            float stepCoord = width / (float) POINT_COUNT;
+            for (int i = 0; i < drawDataCord.length; i++) {
                 //calculate draw pos
                 drawDataCord[i] = stepCoord * (i + 1) - stepCoord / 2f;
             }
 
             Log.d("TAG", "draw data coord: " + Arrays.toString(drawDataCord));
-
-            Handler h = new Handler();
-            h.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-//                    pushBorderChange(new SelectWindowView.Border(border.fromX - 5, border.toX - 5));
-                    pushBorderChange(new SelectWindowView.Border(border.fromX + 5, border.toX + 5));
-                }
-            }, 3000);
         }
 
         firstBorderPush = false;
@@ -168,14 +161,14 @@ public class BigGraph extends View {
                         for (int i = drawDataCord.length - 1; i > 0; i--) {
                             drawDataCord[i] = drawDataCord[i - 1];
                         }
-                        drawDataCord[0] = drawDataCord[1] - getWidth() / 5f;
+                        drawDataCord[0] = drawDataCord[1] - getWidth() / (float) POINT_COUNT;
                     }
                 } else {
                     if (drawDataCord[0] < 0) {
                         for (int i = 0; i < drawDataCord.length - 1; i++) {
                             drawDataCord[i] = drawDataCord[i + 1];
                         }
-                        drawDataCord[drawDataCord.length - 1] = drawDataCord[drawDataCord.length - 2] + getWidth() / 5f;
+                        drawDataCord[drawDataCord.length - 1] = drawDataCord[drawDataCord.length - 2] + getWidth() / (float) POINT_COUNT;
                     }
                 }
 
@@ -200,7 +193,12 @@ public class BigGraph extends View {
         Log.d("TAG", "BIG GRAPH. change select");
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        setMeasuredDimension((int) (MeasureSpec.getSize(widthMeasureSpec) * 1.3), MeasureSpec.getSize(heightMeasureSpec));
+    }
+
     enum ChangeBorderType {
-        MOVE, EXTEND;
+        MOVE, EXTEND
     }
 }

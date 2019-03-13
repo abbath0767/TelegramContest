@@ -18,8 +18,7 @@
         android:id="@+id/big_graph"
         android:layout_width="match_parent"
         android:layout_height="@dimen/big_graph_height"
-        android:layout_marginLeft="@dimen/common_16"
-        android:layout_marginRight="@dimen/common_16"/>
+        android:layout_gravity="center_horizontal"/>
 
     <com.ng.telegramcontest.ui.view.DateSelectorView
         android:id="@+id/date_selector_view"
