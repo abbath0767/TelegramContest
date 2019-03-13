@@ -233,8 +233,11 @@ public class SelectWindowView extends RelativeLayout {
     private void pushChangeBorder() {
         if (listener != null) {
             int size = x.getValues().length;
-            int fromX = (window.getLeft() * size / getWidth());
-            int toX = (window.getRight() * size / getWidth());
+            int fromX = Math.round(window.getLeft() * size / (float) getWidth());
+            int toX = Math.round(window.getRight() * size / (float) getWidth());
+//            Log.d("TAG", "PUSH BORDER CHANGE: " + valueFrom + " - " + valueTo + " = " + (valueTo - valueFrom));
+//            Log.d("TAG", "WINDOW WIDTH " + window.getWidth() + " all width " + getWidth());
+//            Log.d("TAG", "PUSH BORDER CHANGE: " + fromX + " - " + toX + " = " + (toX - fromX));
             listener.onBorderChange(new Border(fromX, toX));
         }
     }

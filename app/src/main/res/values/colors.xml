@@ -7,6 +7,7 @@
     <color name="colorAccent">#D81B60</color>
 
     <color name="colorSeparatorDay">#1d7b7b7b</color>
+    <color name="colorDateDay">#e77b7b7b</color>
 
     <color name="colorBorer">#254e5a94</color>
     <color name="colorBorerDark">#6e527da3</color>

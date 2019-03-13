@@ -14,10 +14,14 @@ import android.view.View;
 import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class BigGraph extends View {
 
     private final static String FOLLOWERS = "Followers";
     private final static int POINT_COUNT = 7;
+    private final static SimpleDateFormat format = new SimpleDateFormat("MMM dd");
 
     public BigGraph(Context context) {
         this(context, null);
@@ -38,7 +42,9 @@ public class BigGraph extends View {
 
     private Paint mTextPaint;
     private Paint mSeparatorPaint;
+    private Paint mDatePaint;
     private ChartData mChartData;
+    private String[] preparedDateFormats;
     private boolean[] mSelectedCharts;
     private int diffX;
     private int previousDiffX = 0;
@@ -52,6 +58,8 @@ public class BigGraph extends View {
     private long currentMin;
     private boolean dataIsInit = false;
     private boolean firstBorderPush = true;
+    private int fixedFromTo = 0;
+    private int fixedStepForDateArrIndex = 0;
 
     private float density = getResources().getDisplayMetrics().density;
 
@@ -65,6 +73,12 @@ public class BigGraph extends View {
         float scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, getResources().getDisplayMetrics());
         mTextPaint.setTextSize(scaledSizeInPixels);
 
+        mDatePaint = new Paint();
+        mDatePaint.setColor(getContext().getResources().getColor(R.color.colorDateDay));
+        mDatePaint.setStyle(Paint.Style.FILL);
+        scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics());
+        mDatePaint.setTextSize(scaledSizeInPixels);
+
         mSeparatorPaint = new Paint();
         mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
         mSeparatorPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_1));
@@ -75,7 +89,6 @@ public class BigGraph extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        Log.d("TAG", "ON DRAW.");
         float bottomBorderY = getHeight() - getHeight() / 10.0f;
         float topBorderY = getHeight() - getHeight() * 0.9f;
         float leftBorder = ((getWidth() - ((getWidth() / 1.3f))) / 2) + 16 * density;
@@ -94,9 +107,20 @@ public class BigGraph extends View {
 
     private void drawBottomDate(Canvas canvas, float bottomBorderY) {
         float y = bottomBorderY + (getHeight() - bottomBorderY) / 2f;
+        //todo UPDATE after EXTEND/COLLAPSE
+//        float step = fixedFromTo / POINT_COUNT;
+
+        //TODO MOVE TO (1)
         for (int i = 0; i < drawDataCord.length; i++) {
-            //todo draw text
-            canvas.drawCircle(drawDataCord[i], y, 10, testPaint);
+            int value = Math.round(fixedStepForDateArrIndex * i + fixedStepForDateArrIndex / 2f);
+//            int value = from + (i * fixedStepForDateArrIndex) - fixedStepForDateArrIndex / 2;
+//            int test = from + i * fixedStepForDateArrIndex - fixedStepForDateArrIndex / 2;
+
+//            Log.d("TAG", "FOR: " + i + " test= " + test);
+
+            String text = preparedDateFormats[value];
+//
+            canvas.drawText(text, drawDataCord[i], y, mDatePaint);
         }
     }
 
@@ -109,24 +133,20 @@ public class BigGraph extends View {
         from = border.fromX;
         to = border.toX;
 
-//        Log.d("TAG", "BIG GRAPH. Push border change.");
-
         if (!firstBorderPush) {
             int diffFrom = tmpFrom - from;
             int diffTo = tmpTo - to;
 
             if (diffFrom == diffTo) {
                 diffX = tmpFrom - from;
-//                Log.d("TAG", "MOVE");
                 mChangeBorderType = ChangeBorderType.MOVE;
+
                 if (diffX == 0) {
-//                    Log.d("TAG", "MOVE. diff = 0");
-                    postInvalidateOnAnimation();
                     return;
                 }
+                fixedStepForDateArrIndex = (to - from) / POINT_COUNT;
                 borderMove(diffX);
             } else {
-//                Log.d("TAG", "EXTEND");
                 mChangeBorderType = ChangeBorderType.EXTEND;
             }
         } else {
@@ -135,10 +155,10 @@ public class BigGraph extends View {
             float stepCoord = width / (float) POINT_COUNT;
             for (int i = 0; i < drawDataCord.length; i++) {
                 //calculate draw pos
-                drawDataCord[i] = stepCoord * (i + 1) - stepCoord / 2f;
+                drawDataCord[i] = stepCoord * i + stepCoord / 2f;
             }
 
-//            Log.d("TAG", "draw data coord: " + Arrays.toString(drawDataCord));
+            fixedStepForDateArrIndex = (to - from) / POINT_COUNT;
             firstBorderPush = false;
         }
 
@@ -165,6 +185,7 @@ public class BigGraph extends View {
         diffAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             float tmpValue = 0;
 
+            //TODO (1)
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 float animatedDiff = (float) animation.getAnimatedValue() - tmpValue;
@@ -199,6 +220,13 @@ public class BigGraph extends View {
         Log.d("TAG", "BIG GRAPH. Init data");
         mChartData = chartData;
         mSelectedCharts = selectedCharts;
+        preparedDateFormats = new String[mChartData.getX().getValues().length];
+        Date date = new Date();
+        long[] x = mChartData.getX().getValues();
+        for (int i = 0; i < preparedDateFormats.length; i++) {
+            date.setTime(x[i]);
+            preparedDateFormats[i] = format.format(date);
+        }
 
         currentMax = mChartData.getMaxY();
         currentMin = mChartData.getMinY();
