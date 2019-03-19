@@ -96,7 +96,7 @@ public class BigGraph extends View {
     protected void onDraw(Canvas canvas) {
 //        float bottomBorderY = getHeight() - getHeight() / 10.0f;
         float topBorderY = getHeight() - getHeight() * 0.9f;
-        float leftBorder = (getWidth() / 2) + 16 * density;
+        float leftBorder = 16 * density;
         canvas.drawText(FOLLOWERS, leftBorder, topBorderY, mTextPaint);
 //        canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
 
@@ -149,6 +149,7 @@ public class BigGraph extends View {
         if (xStart < 0)
             xStart = 0;
 
+        //todo change....
         points[0] = new float[xEnd - xStart + 1];
         long delta = xEnd - xStart;
         float step = (float) width / (float) delta;

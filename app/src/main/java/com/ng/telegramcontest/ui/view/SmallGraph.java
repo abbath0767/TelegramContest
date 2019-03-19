@@ -2,14 +2,12 @@ package com.ng.telegramcontest.ui.view;
 
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
@@ -18,9 +16,6 @@ import com.ng.telegramcontest.data.ChartData;
 import com.ng.telegramcontest.data.DataSet;
 
 import java.lang.ref.WeakReference;
-
-import static com.ng.telegramcontest.util.CalculateHelper.getCordValues;
-import static com.ng.telegramcontest.util.CalculateHelper.getPrepared;
 
 public class SmallGraph extends View implements OnTaskExecuted {
 
@@ -45,7 +40,7 @@ public class SmallGraph extends View implements OnTaskExecuted {
     private Paint mPaint = new Paint();
     private ChartData mChartData;
     private boolean[] selectedCharts;
-    private long[][][] points;
+    private float[][] points;
     private ValueAnimator alphaAnimator;
     private FirstCalculateAsyncTask mFirstCalculateAsyncTask;
     private long currentMaxY = 0;
@@ -56,12 +51,11 @@ public class SmallGraph extends View implements OnTaskExecuted {
     }
 
     @Override
-    public void doOnExecutedInit(long[][][] points) {
+    public void doOnExecutedInit(float[][] points) {
         this.points = points;
         postInvalidateOnAnimation();
     }
 
-    @SuppressLint("LogNotTimber")
     @Override
     protected void onDraw(Canvas canvas) {
         if (points == null) {
@@ -69,7 +63,7 @@ public class SmallGraph extends View implements OnTaskExecuted {
             return;
         }
 
-        for (int chartIndex = 0; chartIndex < points.length; chartIndex++) {
+        for (int chartIndex = 0; chartIndex < points.length - 1; chartIndex++) {
             mPaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex].getColor()));
             mPaint.setAlpha(getAlphaFor(chartIndex));
             float previousX = 0;
@@ -77,12 +71,12 @@ public class SmallGraph extends View implements OnTaskExecuted {
 
             for (int pointIndex = 0; pointIndex < points[chartIndex].length; pointIndex++) {
                 if (pointIndex == 0) {
-                    previousX = points[chartIndex][pointIndex][0];
-                    previousY = getHeight() - points[chartIndex][pointIndex][1];
+                    previousX = points[0][pointIndex];
+                    previousY = getHeight() - points[chartIndex + 1][pointIndex];
                 } else {
-                    canvas.drawLine(previousX, previousY, points[chartIndex][pointIndex][0], getHeight() - points[chartIndex][pointIndex][1], mPaint);
-                    previousX = points[chartIndex][pointIndex][0];
-                    previousY = getHeight() - points[chartIndex][pointIndex][1];
+                    canvas.drawLine(previousX, previousY, points[0][pointIndex], getHeight() - points[chartIndex + 1][pointIndex], mPaint);
+                    previousX = points[0][pointIndex];
+                    previousY = getHeight() - points[chartIndex + 1][pointIndex];
                 }
             }
         }
@@ -106,7 +100,6 @@ public class SmallGraph extends View implements OnTaskExecuted {
     }
 
     public void changeSelect(boolean[] selectedCharts) {
-        Log.d("TAG", "Change select");
         int oldCount = 0;
         int newCount = 0;
         for (boolean show : this.selectedCharts) {
@@ -215,42 +208,25 @@ public class SmallGraph extends View implements OnTaskExecuted {
     }
 
     private void recalculateAndUpdateGraph(long currentMinValue, long currentMaxValue) {
-        if (currentMaxValue == 0)
-            return;
-
         DataSet[] dataSets = mChartData.getDataSets();
-        long[][][] result = new long[dataSets.length][][];
+        float[][] result = new float[dataSets.length + 1][];
         int count = mChartData.size();
-        DataSet x = mChartData.getX();
-        //prepare x values for transformation with min value
-        long[] preparedX = getPrepared(count, x, x.getMinValue());
-        //x values is sorted! find X max
-        long preparedXMax = preparedX[count - 1];
-        //transform x to screen width
-        long[] xValues = getCordValues(count, preparedX, preparedXMax, getWidth());
 
-        long[][] preparedY = new long[dataSets.length][];
-        for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-            preparedY[indexChart] = getPrepared(count, dataSets[indexChart], currentMinValue);
+        result[0] = new float[count];
+        float step = (float) getWidth() / (float) (count - 1);
+        for (int i = 0; i < count; i++) {
+            result[0][i] = step * i;
         }
 
-        long[][] yValues = new long[dataSets.length][];
-        //transform y values to screen height
-        for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-            yValues[indexChart] = getCordValues(count, preparedY[indexChart], currentMaxValue - currentMinValue, getHeight());
-        }
-
-        //fill points
-        for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-            result[indexChart] = new long[count][2];
-
+        long delta = currentMaxValue - currentMinValue;
+        for (int chartIndex = 0; chartIndex < dataSets.length; chartIndex++) {
+            result[chartIndex + 1] = new float[count];
             for (int i = 0; i < count; i++) {
-                result[indexChart][i][0] = xValues[i];
-                result[indexChart][i][1] = yValues[indexChart][i];
+                result[chartIndex + 1][i] = ((dataSets[chartIndex].getValues()[i] - currentMinValue)) * getHeight() / delta;
             }
         }
 
-        this.doOnExecutedInit(result);
+        doOnExecutedInit(result);
     }
 
     private void clearChart() {
@@ -276,47 +252,37 @@ public class SmallGraph extends View implements OnTaskExecuted {
         @Override
         protected Void doInBackground(Void... voids) {
             DataSet[] dataSets = chartData.getDataSets();
-            long[][][] result = new long[dataSets.length][][];
-            DataSet x = chartData.getX();
+            float[][] result = new float[dataSets.length + 1][];
             int count = chartData.size();
-            long minY = chartData.getMinY();
 
-            //prepare x values for transformation with min value
-            long[] preparedX = getPrepared(count, x, x.getMinValue());
-            //x values is sorted! find X max
-            long preparedXMax = preparedX[count - 1];
-            //transform x to screen width
-            long[] xValues = getCordValues(count, preparedX, preparedXMax, width);
-
-            //prepare Y values for transformation with global minimum Y
-            long[][] preparedY = new long[dataSets.length][];
-            for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-                preparedY[indexChart] = getPrepared(count, dataSets[indexChart], minY);
+            result[0] = new float[count];
+            float step = (float) width / (float) (count - 1);
+            for (int i = 0; i < count; i++) {
+                result[0][i] = step * i;
             }
 
-            //find y max
-            long preparedYMax = -1;
-            for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
+            long currentYMin = 0;
+            long currentYMax = 0;
+            for (int chartIndex = 0; chartIndex < dataSets.length; chartIndex++) {
+                if (chartIndex == 0) {
+                    currentYMin = dataSets[chartIndex].getValues()[0];
+                    currentYMax = dataSets[chartIndex].getValues()[0];
+                }
                 for (int i = 0; i < count; i++) {
-                    if (preparedYMax < preparedY[indexChart][i]) {
-                        preparedYMax = preparedY[indexChart][i];
+                    if (currentYMin > dataSets[chartIndex].getValues()[i]) {
+                        currentYMin = dataSets[chartIndex].getValues()[i];
+                    }
+                    if (currentYMax < dataSets[chartIndex].getValues()[i]) {
+                        currentYMax = dataSets[chartIndex].getValues()[i];
                     }
                 }
             }
 
-            long[][] yValues = new long[dataSets.length][];
-            //transform y values to screen height
-            for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-                yValues[indexChart] = getCordValues(count, preparedY[indexChart], preparedYMax, height);
-            }
-
-            //fill points
-            for (int indexChart = 0; indexChart < dataSets.length; indexChart++) {
-                result[indexChart] = new long[count][2];
-
+            long delta = currentYMax - currentYMin;
+            for (int chartIndex = 0; chartIndex < dataSets.length; chartIndex++) {
+                result[chartIndex + 1] = new float[count];
                 for (int i = 0; i < count; i++) {
-                    result[indexChart][i][0] = xValues[i];
-                    result[indexChart][i][1] = yValues[indexChart][i];
+                    result[chartIndex + 1][i] = ((dataSets[chartIndex].getValues()[i] - currentYMin)) * height / delta;
                 }
             }
 
