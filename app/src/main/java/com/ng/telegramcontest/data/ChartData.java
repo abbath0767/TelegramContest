@@ -37,11 +37,17 @@ public class ChartData {
 
     public long getMaxYFrom(boolean[] arraysOfNeedCharts) {
         long max = 0;
-
+        boolean inited = false;
         for (int i = 0; i < arraysOfNeedCharts.length; i++) {
-            long currentMax = dataSets[i].getMaxValue();
-            if (arraysOfNeedCharts[i] && max < currentMax) {
-                max = currentMax;
+            if (arraysOfNeedCharts[i]) {
+                if (!inited) {
+                    inited = true;
+                    max = dataSets[i].getMaxValue();
+                    continue;
+                }
+                if (max < dataSets[i].getMaxValue()) {
+                    max = dataSets[i].getMaxValue();
+                }
             }
         }
 
@@ -72,13 +78,17 @@ public class ChartData {
     public long getMinYFrom(boolean[] arraysOfNeedCharts) {
         long min = -1;
 
+        boolean inited = false;
         for (int i = 0; i < arraysOfNeedCharts.length; i++) {
-            long currentMin = dataSets[i].getMinValue();
-
-            if (min == -1 && arraysOfNeedCharts[i]) {
-                min = currentMin;
-            } else if (arraysOfNeedCharts[i] && min > currentMin) {
-                min = currentMin;
+            if (arraysOfNeedCharts[i]) {
+                if (!inited) {
+                    inited = true;
+                    min = dataSets[i].getMinValue();
+                    continue;
+                }
+                if (min > dataSets[i].getMinValue()) {
+                    min = dataSets[i].getMinValue();
+                }
             }
         }
 

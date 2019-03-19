@@ -1,14 +1,15 @@
 package com.ng.telegramcontest.ui.view;
 
+import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 
 import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
@@ -39,6 +40,8 @@ public class BigGraph extends View {
         initPaints();
     }
 
+    private int lastAdded = -1;
+    private int lastRemoved = -1;
     private Paint mTextPaint;
     private Paint mSeparatorPaint;
     private Paint mDatePaint;
@@ -53,11 +56,15 @@ public class BigGraph extends View {
     private int to;
     private float[] drawDataCord;
     private ValueAnimator diffAnimator;
+    private ValueAnimator alphaAnimator;
     private long currentMax;
     private long currentMin;
     private boolean dataIsInit = false;
     private boolean firstBorderPush = true;
     float[][] points;
+    private float bottomBorderY = 0f;
+    private float topBorderY = 0f;
+    private float borderedHeight = 0f;
 
     private float density = getResources().getDisplayMetrics().density;
 
@@ -94,52 +101,96 @@ public class BigGraph extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-//        float bottomBorderY = getHeight() - getHeight() / 10.0f;
         float topBorderY = getHeight() - getHeight() * 0.9f;
         float leftBorder = 16 * density;
         canvas.drawText(FOLLOWERS, leftBorder, topBorderY, mTextPaint);
-//        canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
+        canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
 
         if (!dataIsInit) {
             super.onDraw(canvas);
             return;
         }
 
-        drawLines(canvas);
+        if (points != null) {
+            drawLines(canvas);
+        }
 
         super.onDraw(canvas);
     }
 
     private void drawLines(Canvas canvas) {
-        float prevX = 0f;
-        float prevY = 0f;
-        for (int i = 0; i < points[0].length; i++) {
-            if (i == 0) {
-                prevX = points[0][i];
-                prevY = getHeight() - points[1][i];
-            } else {
-                canvas.drawLine(prevX, prevY, points[0][i], getHeight() - points[1][i], mLinePaint);
-                prevX = points[0][i];
-                prevY = getHeight() - points[1][i];
+        for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
+            mLinePaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex].getColor()));
+            mLinePaint.setAlpha(getAlphaFor(chartIndex));
+            float prevX = 0f;
+            float prevY = 0f;
+
+            for (int i = 0; i < points[0].length; i++) {
+                if (i == 0) {
+                    prevX = points[0][i];
+                    prevY = bottomBorderY - points[chartIndex + 1][i];
+                } else {
+                    canvas.drawLine(prevX, prevY, points[0][i], bottomBorderY - points[chartIndex + 1][i], mLinePaint);
+                    prevX = points[0][i];
+                    prevY = bottomBorderY - points[chartIndex + 1][i];
+                }
             }
         }
+    }
+
+    private int getAlphaFor(int chartIndex) {
+        if (chartIndex == lastAdded) {
+            return (int) alphaAnimator.getAnimatedValue();
+        } else if (chartIndex == lastRemoved) {
+            return (int) alphaAnimator.getAnimatedValue();
+        } else if (mSelectedCharts[chartIndex])
+            return 255;
+        else
+            return 0;
     }
 
     public void pushBorderChange(final int fromX, final int toX, final int type) {
         if (mChartData == null)
             return;
 
+        if (firstBorderPush) {
+            int len = mChartData.getX().getValues().length;
+            int xStart = Math.round(fromX * len / getWidth());
+            int xEnd = Math.round(toX * len / getWidth());
+            boolean inited = false;
+            for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
+                long[] y = mChartData.getDataSets()[chartIndex].getValues();
+                for (int i = xStart; i <= xEnd; i++) {
+                    if (!inited) {
+                        inited = true;
+                        currentMin = y[i];
+                        currentMax = y[i];
+                        continue;
+                    }
+                    if (currentMin > y[i]) {
+                        currentMin = y[i];
+                    }
+                    if (currentMax < y[i]) {
+                        currentMax = y[i];
+                    }
+                }
+            }
+            firstBorderPush = false;
+        }
+
         from = fromX;
         to = toX;
 
-        initPoints();
-        postInvalidateOnAnimation();
+        initPoints(true);
     }
 
-    private void initPoints() {
+    private void initPoints(boolean withPostInvalidate) {
+        initPoints(false, -1, -1);
+    }
+
+    private void initPoints(boolean customExtremum, long min, long max) {
         points = new float[mChartData.getDataSets().length + 1][];
         int len = mChartData.getX().getValues().length;
-        long[] x = mChartData.getX().getValues();
         int xStart = Math.round(from * len / getWidth());
         int xEnd = Math.round(to * len / getWidth());
         int width = getWidth();
@@ -149,7 +200,6 @@ public class BigGraph extends View {
         if (xStart < 0)
             xStart = 0;
 
-        //todo change....
         points[0] = new float[xEnd - xStart + 1];
         long delta = xEnd - xStart;
         float step = (float) width / (float) delta;
@@ -157,34 +207,50 @@ public class BigGraph extends View {
             points[0][i] = step * i;
         }
 
-        int height = getHeight();
-        points[1] = new float[xEnd - xStart + 1];
-        long[] y = mChartData.getDataSets()[0].getValues();
+        boolean inited = false;
         long currentYMin = 0;
         long currentYMax = 0;
-        for (int i = xStart; i <= xEnd; i++) {
-            if (i == xStart) {
-                currentYMin = y[i];
-                currentYMax = y[i];
-                continue;
-            }
-            if (currentYMin > y[i]) {
-                currentYMin = y[i];
-            }
-            if (currentYMax < y[i]) {
-                currentYMax = y[i];
+        if (customExtremum) {
+            currentYMin = min;
+            currentYMax = max;
+        } else {
+            for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
+                if (!mSelectedCharts[chartIndex]) {
+                    continue;
+                }
+                long[] y = mChartData.getDataSets()[chartIndex].getValues();
+                for (int i = xStart; i <= xEnd; i++) {
+                    if (!inited) {
+                        inited = true;
+                        currentYMin = y[i];
+                        currentYMax = y[i];
+                        continue;
+                    }
+                    if (currentYMin > y[i]) {
+                        currentYMin = y[i];
+                    }
+                    if (currentYMax < y[i]) {
+                        currentYMax = y[i];
+                    }
+                }
             }
         }
+
         delta = currentYMax - currentYMin;
-        for (int point = xStart; point <= xEnd; point++) {
-            points[1][point - xStart] = (y[point] - currentYMin) * height / delta;
+        for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
+            points[chartIndex + 1] = new float[xEnd - xStart + 1];
+            long[] y = mChartData.getDataSets()[chartIndex].getValues();
+            for (int i = xStart; i <= xEnd; i++) {
+                points[chartIndex + 1][i - xStart] = (y[i] - currentYMin) * borderedHeight / delta;
+            }
         }
+
+        postInvalidateOnAnimation();
     }
 
     public void initData(ChartData chartData, boolean[] selectedCharts) {
-        Log.d("TAG", "BIG GRAPH. Init data");
         mChartData = chartData;
-        mSelectedCharts = selectedCharts;
+        mSelectedCharts = selectedCharts.clone();
         preparedDateFormats = new String[mChartData.getX().getValues().length];
         Date date = new Date();
         long[] x = mChartData.getX().getValues();
@@ -193,12 +259,140 @@ public class BigGraph extends View {
             preparedDateFormats[i] = format.format(date);
         }
 
-        currentMax = mChartData.getMaxY();
-        currentMin = mChartData.getMinY();
         dataIsInit = true;
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        float height = MeasureSpec.getSize(heightMeasureSpec);
+        bottomBorderY = height * 0.9f;
+        topBorderY = height * 0.1f;
+        borderedHeight = bottomBorderY - topBorderY;
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
     public void changeSelect(boolean[] selectedCharts) {
-        Log.d("TAG", "BIG GRAPH. change select");
+        int oldCount = 0;
+        int newCount = 0;
+        for (boolean show : mSelectedCharts) {
+            if (show)
+                oldCount++;
+        }
+        for (boolean show : selectedCharts) {
+            if (show)
+                newCount++;
+        }
+
+
+        boolean added = newCount > oldCount;
+        if (added) {
+            lastRemoved = -1;
+            for (int i = 0; i < selectedCharts.length; i++) {
+                if (selectedCharts[i] && !mSelectedCharts[i]) {
+                    lastAdded = i;
+                    break;
+                }
+            }
+        } else {
+            lastAdded = -1;
+            for (int i = 0; i < selectedCharts.length; i++) {
+                if (!selectedCharts[i] && mSelectedCharts[i]) {
+                    lastRemoved = i;
+                    break;
+                }
+            }
+        }
+
+        mSelectedCharts = selectedCharts.clone();
+
+        long newMax = -1;
+        long newMin = -1;
+        boolean inited = false;
+        int len = mChartData.getX().getValues().length;
+        int xStart = Math.round(from * len / getWidth());
+        int xEnd = Math.round(to * len / getWidth());
+        for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
+            if (!mSelectedCharts[chartIndex]) {
+                continue;
+            }
+            long[] y = mChartData.getDataSets()[chartIndex].getValues();
+            for (int i = xStart; i <= xEnd; i++) {
+                if (!inited) {
+                    inited = true;
+                    newMin = y[i];
+                    newMax = y[i];
+                    continue;
+                }
+                if (newMin > y[i]) {
+                    newMin = y[i];
+                }
+                if (newMax < y[i]) {
+                    newMax = y[i];
+                }
+            }
+        }
+
+        if ((currentMax == -1 || currentMin == -1) && !added) {
+            clearChart();
+        } else if (currentMax == newMax && currentMin == newMin) {
+            int alphaFrom = 255;
+            int alphaTo = 0;
+            if (added) {
+                alphaFrom = 0;
+                alphaTo = 255;
+            }
+
+            alphaAnimator = ValueAnimator.ofInt(alphaFrom, alphaTo);
+            alphaAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    postInvalidateOnAnimation();
+                }
+            });
+            alphaAnimator.start();
+        } else {
+            int alphaFrom = 255;
+            int alphaTo = 0;
+
+            if (added) {
+                alphaFrom = 0;
+                alphaTo = 255;
+            }
+
+            final ValueAnimator min = ValueAnimator.ofFloat(currentMin, newMin);
+            final ValueAnimator max = ValueAnimator.ofFloat(currentMax, newMax);
+            alphaAnimator = ValueAnimator.ofInt(alphaFrom, alphaTo);
+            min.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    long value = ((Float) max.getAnimatedValue()).longValue();
+                    if (value == 0)
+                        value = currentMax;
+                    initPoints(true, ((Float) animation.getAnimatedValue()).longValue(), value);
+                }
+            });
+
+            max.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    long value = ((Float) min.getAnimatedValue()).longValue();
+                    if (value == 0)
+                        value = currentMin;
+                    initPoints(true, value, ((Float) animation.getAnimatedValue()).longValue());
+                }
+            });
+            AnimatorSet set = new AnimatorSet();
+            set.playTogether(min, max, alphaAnimator);
+            set.setInterpolator(new DecelerateInterpolator());
+            set.start();
+
+            currentMax = newMax;
+            currentMin = newMin;
+        }
+    }
+
+    private void clearChart() {
+        points = null;
+        invalidate();
     }
 }

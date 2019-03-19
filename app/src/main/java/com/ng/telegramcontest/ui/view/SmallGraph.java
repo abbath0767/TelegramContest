@@ -234,6 +234,7 @@ public class SmallGraph extends View implements OnTaskExecuted {
         invalidate();
     }
 
+    //kek
     //calculated time is 0 ms. mb remove AsyncTask and calculate in main thread?
     private static class FirstCalculateAsyncTask extends AsyncTask<Void, Void, Void> {
 
