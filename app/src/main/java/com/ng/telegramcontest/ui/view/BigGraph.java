@@ -5,7 +5,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -43,6 +42,7 @@ public class BigGraph extends View {
     private Paint mTextPaint;
     private Paint mSeparatorPaint;
     private Paint mDatePaint;
+    private Paint mLinePaint;
     private ChartData mChartData;
     private String[] preparedDateFormats;
     private boolean[] mSelectedCharts;
@@ -53,13 +53,11 @@ public class BigGraph extends View {
     private int to;
     private float[] drawDataCord;
     private ValueAnimator diffAnimator;
-    private ChangeBorderType mChangeBorderType;
     private long currentMax;
     private long currentMin;
     private boolean dataIsInit = false;
     private boolean firstBorderPush = true;
-    private int fixedFromTo = 0;
-    private int fixedStepForDateArrIndex = 0;
+    float[][] points;
 
     private float density = getResources().getDisplayMetrics().density;
 
@@ -79,141 +77,107 @@ public class BigGraph extends View {
         scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics());
         mDatePaint.setTextSize(scaledSizeInPixels);
 
+        mLinePaint = new Paint();
+        mLinePaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_2));
+        mLinePaint.setColor(Color.RED);
+        mLinePaint.setAntiAlias(true);
+        setLayerType(LAYER_TYPE_HARDWARE, mLinePaint);
+
         mSeparatorPaint = new Paint();
         mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
         mSeparatorPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_1));
 
         testPaint = new Paint();
+        testPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_2));
         testPaint.setColor(Color.RED);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        float bottomBorderY = getHeight() - getHeight() / 10.0f;
+//        float bottomBorderY = getHeight() - getHeight() / 10.0f;
         float topBorderY = getHeight() - getHeight() * 0.9f;
-        float leftBorder = ((getWidth() - ((getWidth() / 1.3f))) / 2) + 16 * density;
+        float leftBorder = (getWidth() / 2) + 16 * density;
         canvas.drawText(FOLLOWERS, leftBorder, topBorderY, mTextPaint);
-        canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
+//        canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
 
         if (!dataIsInit) {
             super.onDraw(canvas);
             return;
         }
 
-        drawBottomDate(canvas, bottomBorderY);
+        drawLines(canvas);
 
         super.onDraw(canvas);
     }
 
-    private void drawBottomDate(Canvas canvas, float bottomBorderY) {
-        float y = bottomBorderY + (getHeight() - bottomBorderY) / 2f;
-        //todo UPDATE after EXTEND/COLLAPSE
-//        float step = fixedFromTo / POINT_COUNT;
-
-        //TODO MOVE TO (1)
-        for (int i = 0; i < drawDataCord.length; i++) {
-            int value = Math.round(fixedStepForDateArrIndex * i + fixedStepForDateArrIndex / 2f);
-//            int value = from + (i * fixedStepForDateArrIndex) - fixedStepForDateArrIndex / 2;
-//            int test = from + i * fixedStepForDateArrIndex - fixedStepForDateArrIndex / 2;
-
-//            Log.d("TAG", "FOR: " + i + " test= " + test);
-
-            String text = preparedDateFormats[value];
-//
-            canvas.drawText(text, drawDataCord[i], y, mDatePaint);
+    private void drawLines(Canvas canvas) {
+        float prevX = 0f;
+        float prevY = 0f;
+        for (int i = 0; i < points[0].length; i++) {
+            if (i == 0) {
+                prevX = points[0][i];
+                prevY = getHeight() - points[1][i];
+            } else {
+                canvas.drawLine(prevX, prevY, points[0][i], getHeight() - points[1][i], mLinePaint);
+                prevX = points[0][i];
+                prevY = getHeight() - points[1][i];
+            }
         }
     }
 
-    public void pushBorderChange(final SelectWindowView.Border border) {
+    public void pushBorderChange(final int fromX, final int toX, final int type) {
         if (mChartData == null)
             return;
 
-        int tmpFrom = from;
-        int tmpTo = to;
-        from = border.fromX;
-        to = border.toX;
+        from = fromX;
+        to = toX;
 
-        if (!firstBorderPush) {
-            int diffFrom = tmpFrom - from;
-            int diffTo = tmpTo - to;
-
-            if (diffFrom == diffTo) {
-                diffX = tmpFrom - from;
-                mChangeBorderType = ChangeBorderType.MOVE;
-
-                if (diffX == 0) {
-                    return;
-                }
-                fixedStepForDateArrIndex = (to - from) / POINT_COUNT;
-                borderMove(diffX);
-            } else {
-                mChangeBorderType = ChangeBorderType.EXTEND;
-            }
-        } else {
-            drawDataCord = new float[POINT_COUNT];
-            int width = getWidth();
-            float stepCoord = width / (float) POINT_COUNT;
-            for (int i = 0; i < drawDataCord.length; i++) {
-                //calculate draw pos
-                drawDataCord[i] = stepCoord * i + stepCoord / 2f;
-            }
-
-            fixedStepForDateArrIndex = (to - from) / POINT_COUNT;
-            firstBorderPush = false;
-        }
-
+        initPoints();
         postInvalidateOnAnimation();
     }
 
-    private void borderMove(final int diff) {
-        final boolean toRight = diff > 0;
-        final int len = to - from;
+    private void initPoints() {
+        points = new float[mChartData.getDataSets().length + 1][];
+        int len = mChartData.getX().getValues().length;
+        long[] x = mChartData.getX().getValues();
+        int xStart = Math.round(from * len / getWidth());
+        int xEnd = Math.round(to * len / getWidth());
+        int width = getWidth();
 
-        if (diffAnimator == null) {
-            previousDiffX = diff;
-            diffAnimator = ValueAnimator.ofFloat(0f, diff);
-//            diffAnimator.setInterpolator(new LinearInterpolator());
-        } else {
-            previousEnd += (float) diffAnimator.getAnimatedValue();
-            diffAnimator.removeAllUpdateListeners();
-            diffAnimator.cancel();
-            diffAnimator = ValueAnimator.ofFloat(0f, diff + previousDiffX - previousEnd);
-//            diffAnimator.setInterpolator(new LinearInterpolator());
-            previousDiffX = diff + previousDiffX;
+        if (xEnd >= len)
+            xEnd = len - 1;
+        if (xStart < 0)
+            xStart = 0;
+
+        points[0] = new float[xEnd - xStart + 1];
+        long delta = xEnd - xStart;
+        float step = (float) width / (float) delta;
+        for (int i = 0; i <= delta; i++) {
+            points[0][i] = step * i;
         }
 
-        diffAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            float tmpValue = 0;
-
-            //TODO (1)
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                float animatedDiff = (float) animation.getAnimatedValue() - tmpValue;
-                tmpValue = (float) animation.getAnimatedValue();
-                for (int i = 0; i < drawDataCord.length; i++) {
-                    drawDataCord[i] = drawDataCord[i] + (animatedDiff * getWidth() / len);
-                }
-
-                if (toRight) {
-                    if (drawDataCord[drawDataCord.length - 1] > getWidth()) {
-                        for (int i = drawDataCord.length - 1; i > 0; i--) {
-                            drawDataCord[i] = drawDataCord[i - 1];
-                        }
-                        drawDataCord[0] = drawDataCord[1] - getWidth() / (float) POINT_COUNT;
-                    }
-                } else {
-                    if (drawDataCord[0] < 0) {
-                        for (int i = 0; i < drawDataCord.length - 1; i++) {
-                            drawDataCord[i] = drawDataCord[i + 1];
-                        }
-                        drawDataCord[drawDataCord.length - 1] = drawDataCord[drawDataCord.length - 2] + getWidth() / (float) POINT_COUNT;
-                    }
-                }
-
-                postInvalidateOnAnimation();
+        int height = getHeight();
+        points[1] = new float[xEnd - xStart + 1];
+        long[] y = mChartData.getDataSets()[0].getValues();
+        long currentYMin = 0;
+        long currentYMax = 0;
+        for (int i = xStart; i <= xEnd; i++) {
+            if (i == xStart) {
+                currentYMin = y[i];
+                currentYMax = y[i];
+                continue;
             }
-        });
-        diffAnimator.start();
+            if (currentYMin > y[i]) {
+                currentYMin = y[i];
+            }
+            if (currentYMax < y[i]) {
+                currentYMax = y[i];
+            }
+        }
+        delta = currentYMax - currentYMin;
+        for (int point = xStart; point <= xEnd; point++) {
+            points[1][point - xStart] = (y[point] - currentYMin) * height / delta;
+        }
     }
 
     public void initData(ChartData chartData, boolean[] selectedCharts) {
@@ -231,90 +195,9 @@ public class BigGraph extends View {
         currentMax = mChartData.getMaxY();
         currentMin = mChartData.getMinY();
         dataIsInit = true;
-
-//        testSwipeLeft();
-//        testSwipeRight();
-    }
-
-    private void testSwipeLeft() {
-        Handler h = new Handler();
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from - 1, to - 1));
-            }
-        }, 3000);
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from - 2, to - 2));
-            }
-        }, 3030);
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from - 3, to - 3));
-            }
-        }, 3050);
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from - 4, to - 4));
-            }
-        }, 3080);
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from - 5, to - 5));
-            }
-        }, 3140);
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from - 5, to - 5));
-//                testSwipeRight();
-            }
-        }, 3500);
-    }
-
-    private void testSwipeRight() {
-        Handler h = new Handler();
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from + 1, to + 1));
-            }
-        }, 3000);
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from + 1, to + 1));
-            }
-        }, 3030);
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from + 2, to + 2));
-            }
-        }, 3050);
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pushBorderChange(new SelectWindowView.Border(from + 1, to + 1));
-            }
-        }, 3150);
     }
 
     public void changeSelect(boolean[] selectedCharts) {
         Log.d("TAG", "BIG GRAPH. change select");
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension((int) (MeasureSpec.getSize(widthMeasureSpec) * 1.3), MeasureSpec.getSize(heightMeasureSpec));
-    }
-
-    enum ChangeBorderType {
-        MOVE, EXTEND
     }
 }

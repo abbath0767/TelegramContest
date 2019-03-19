@@ -52,7 +52,7 @@ public class SelectWindowView extends RelativeLayout {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int x = (int) event.getRawX();
+                int x = Math.round(event.getRawX());
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
@@ -91,12 +91,11 @@ public class SelectWindowView extends RelativeLayout {
                         }
 
                         tmpX = x;
-                        pushChangeBorder();
+                        pushChangeBorder(0);
                         return true;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
-
-                        pushChangeBorder();
+//                        pushChangeBorder();
                         tmpX = 0;
                         return true;
                 }
@@ -108,7 +107,7 @@ public class SelectWindowView extends RelativeLayout {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int x = (int) event.getRawX();
+                int x = Math.round(event.getRawX());
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
@@ -140,12 +139,12 @@ public class SelectWindowView extends RelativeLayout {
                         }
 
                         tmpX = x;
-                        pushChangeBorder();
+                        pushChangeBorder(1);
                         return true;
                     }
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL: {
-                        pushChangeBorder();
+//                        pushChangeBorder();
                         tmpX = 0;
                         return true;
                     }
@@ -159,7 +158,7 @@ public class SelectWindowView extends RelativeLayout {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int x = (int) event.getRawX();
+                int x = Math.round(event.getRawX());
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
@@ -192,12 +191,11 @@ public class SelectWindowView extends RelativeLayout {
                         }
 
                         tmpX = x;
-                        pushChangeBorder();
+                        pushChangeBorder(1);
                         return true;
                     }
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL: {
-                        pushChangeBorder();
                         tmpX = 0;
                         return true;
                     }
@@ -211,7 +209,7 @@ public class SelectWindowView extends RelativeLayout {
             @Override
             public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
                 window.removeOnLayoutChangeListener(this);
-                pushChangeBorder();
+                pushChangeBorder(0);
             }
         });
     }
@@ -230,22 +228,16 @@ public class SelectWindowView extends RelativeLayout {
         }, 1);
     }
 
-    private void pushChangeBorder() {
+    private void pushChangeBorder(int type) {
         if (listener != null) {
-            int size = x.getValues().length;
-            int fromX = Math.round(window.getLeft() * size / (float) getWidth());
-            int toX = Math.round(window.getRight() * size / (float) getWidth());
-//            Log.d("TAG", "PUSH BORDER CHANGE: " + valueFrom + " - " + valueTo + " = " + (valueTo - valueFrom));
-//            Log.d("TAG", "WINDOW WIDTH " + window.getWidth() + " all width " + getWidth());
-//            Log.d("TAG", "PUSH BORDER CHANGE: " + fromX + " - " + toX + " = " + (toX - fromX));
-            listener.onBorderChange(new Border(fromX, toX));
+            listener.onBorderChange(window.getLeft(), window.getRight(), type);
         }
     }
 
     public void addOnBorderChangeListener(BorderChangeListener listener) {
         this.listener = listener;
         if (currentBorder != null && listener != null) {
-            listener.onBorderChange(currentBorder);
+            listener.onBorderChange(currentBorder.fromX, currentBorder.toX, 0);
         }
     }
 
@@ -269,6 +261,6 @@ public class SelectWindowView extends RelativeLayout {
     }
 
     public interface BorderChangeListener {
-        void onBorderChange(Border border);
+        void onBorderChange(int fromX, int toX, int type);
     }
 }
