@@ -65,6 +65,9 @@ public class BigGraph extends View {
     private float bottomBorderY = 0f;
     private float topBorderY = 0f;
     private float borderedHeight = 0f;
+    private int xStart = 0;
+    private int xEnd = 0;
+    private int len = 0;
 
     private float density = getResources().getDisplayMetrics().density;
 
@@ -153,6 +156,9 @@ public class BigGraph extends View {
         if (mChartData == null)
             return;
 
+        from = fromX;
+        to = toX;
+
         if (firstBorderPush) {
             int len = mChartData.getX().getValues().length;
             int xStart = Math.round(fromX * len / getWidth());
@@ -178,22 +184,29 @@ public class BigGraph extends View {
             firstBorderPush = false;
         }
 
-        from = fromX;
-        to = toX;
-
-        initPoints(true);
+        initPoints();
     }
 
-    private void initPoints(boolean withPostInvalidate) {
+    private void initPoints() {
         initPoints(false, -1, -1);
     }
 
+    //todo rework
     private void initPoints(boolean customExtremum, long min, long max) {
         points = new float[mChartData.getDataSets().length + 1][];
-        int len = mChartData.getX().getValues().length;
-        int xStart = Math.round(from * len / getWidth());
-        int xEnd = Math.round(to * len / getWidth());
         int width = getWidth();
+        xStart = Math.round((float) (from * len) / (float) width);
+        xEnd = Math.round((float) (to * len) / (float) width);
+        int countBetween = xEnd - xStart;
+
+        float testStart = (float) (from * len) / (float) getWidth();
+        float testTo = (float) (to * len) / (float) getWidth();
+        float testDiff = testTo - testStart;
+
+        if (countBetween != (int) testDiff) {
+            countBetween = (int) testDiff;
+            xEnd = xStart + countBetween;
+        }
 
         if (xEnd >= len)
             xEnd = len - 1;
@@ -258,6 +271,7 @@ public class BigGraph extends View {
             date.setTime(x[i]);
             preparedDateFormats[i] = format.format(date);
         }
+        len = mChartData.getX().getValues().length;
 
         dataIsInit = true;
     }

@@ -48,6 +48,7 @@ public class SmallGraph extends View implements OnTaskExecuted {
 
     {
         mPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_1));
+        mPaint.setAntiAlias(true);
     }
 
     @Override
