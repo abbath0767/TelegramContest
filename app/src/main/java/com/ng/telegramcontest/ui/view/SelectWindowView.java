@@ -144,7 +144,6 @@ public class SelectWindowView extends RelativeLayout {
                     }
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL: {
-//                        pushChangeBorder();
                         tmpX = 0;
                         return true;
                     }

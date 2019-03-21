@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
@@ -15,6 +16,7 @@ import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 public class BigGraph extends View {
@@ -65,9 +67,8 @@ public class BigGraph extends View {
     private float bottomBorderY = 0f;
     private float topBorderY = 0f;
     private float borderedHeight = 0f;
-    private int xStart = 0;
-    private int xEnd = 0;
-    private int len = 0;
+
+    float[] xSmallCoord;
 
     private float density = getResources().getDisplayMetrics().density;
 
@@ -191,35 +192,40 @@ public class BigGraph extends View {
         initPoints(false, -1, -1);
     }
 
-    //todo rework
+    //todo fix it! potential change from and to to float values
     private void initPoints(boolean customExtremum, long min, long max) {
+        Log.d("TAG", "from: " + from + " to: " + to);
         points = new float[mChartData.getDataSets().length + 1][];
-        int width = getWidth();
-        xStart = Math.round((float) (from * len) / (float) width);
-        xEnd = Math.round((float) (to * len) / (float) width);
-        int countBetween = xEnd - xStart;
+        float width = getWidth();
+        int leftIndex = 0, rightIndex = 0;
+        for (int i = 0; i < xSmallCoord.length; i++) {
+            if (xSmallCoord[i] <= from) {
+                if (i == 0) {
+                    leftIndex = 0;
+                } else {
+                    leftIndex = i;
+                }
+            }
 
-        float testStart = (float) (from * len) / (float) getWidth();
-        float testTo = (float) (to * len) / (float) getWidth();
-        float testDiff = testTo - testStart;
-
-        if (countBetween != (int) testDiff) {
-            countBetween = (int) testDiff;
-            xEnd = xStart + countBetween;
+            if (xSmallCoord[i] <= to) {
+                if (i == xSmallCoord.length) {
+                    rightIndex = xSmallCoord.length - 1;
+                } else {
+                    rightIndex = i + 1;
+                }
+            }
         }
 
-        if (xEnd >= len)
-            xEnd = len - 1;
-        if (xStart < 0)
-            xStart = 0;
-
-        points[0] = new float[xEnd - xStart + 1];
-        long delta = xEnd - xStart;
-        float step = (float) width / (float) delta;
-        for (int i = 0; i <= delta; i++) {
-            points[0][i] = step * i;
+        int countOfPoint = rightIndex - leftIndex;
+        points[0] = new float[countOfPoint];
+        for (int i = 0; i < countOfPoint; i++) {
+            points[0][i] = xSmallCoord[i + leftIndex] - xSmallCoord[leftIndex + 1];
         }
 
+        for (int i = 0; i < countOfPoint; i++) {
+            points[0][i] = points[0][i] * (float) width / points[0][countOfPoint - 1];
+        }
+//
         boolean inited = false;
         long currentYMin = 0;
         long currentYMax = 0;
@@ -232,7 +238,7 @@ public class BigGraph extends View {
                     continue;
                 }
                 long[] y = mChartData.getDataSets()[chartIndex].getValues();
-                for (int i = xStart; i <= xEnd; i++) {
+                for (int i = leftIndex; i < rightIndex; i++) {
                     if (!inited) {
                         inited = true;
                         currentYMin = y[i];
@@ -249,12 +255,12 @@ public class BigGraph extends View {
             }
         }
 
-        delta = currentYMax - currentYMin;
+        long delta = currentYMax - currentYMin;
         for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
-            points[chartIndex + 1] = new float[xEnd - xStart + 1];
+            points[chartIndex + 1] = new float[countOfPoint];
             long[] y = mChartData.getDataSets()[chartIndex].getValues();
-            for (int i = xStart; i <= xEnd; i++) {
-                points[chartIndex + 1][i - xStart] = (y[i] - currentYMin) * borderedHeight / delta;
+            for (int i = leftIndex; i < rightIndex; i++) {
+                points[chartIndex + 1][i - leftIndex] = (y[i] - currentYMin) * borderedHeight / delta;
             }
         }
 
@@ -266,12 +272,26 @@ public class BigGraph extends View {
         mSelectedCharts = selectedCharts.clone();
         preparedDateFormats = new String[mChartData.getX().getValues().length];
         Date date = new Date();
-        long[] x = mChartData.getX().getValues();
+        final long[] x = mChartData.getX().getValues();
         for (int i = 0; i < preparedDateFormats.length; i++) {
             date.setTime(x[i]);
             preparedDateFormats[i] = format.format(date);
         }
-        len = mChartData.getX().getValues().length;
+
+        addOnLayoutChangeListener(new OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                removeOnLayoutChangeListener(this);
+                Log.d("TAG", "layout change: " + getWidth());
+                float step = (float) getWidth() / (float) (x.length - 1);
+                Log.d("TAG", "small step: " + step);
+                xSmallCoord = new float[x.length];
+                for (int i = 0; i < x.length; i++) {
+                    xSmallCoord[i] = i * step;
+                }
+                Log.d("TAG", "small x coord: " + Arrays.toString(xSmallCoord));
+            }
+        });
 
         dataIsInit = true;
     }
