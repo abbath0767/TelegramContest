@@ -35,8 +35,8 @@ public class SelectWindowView extends RelativeLayout {
     private View rightBorderTouch;
     private Border currentBorder;
 
-    private float tmpLeft = 0f;
-    private float tmpRight = 0f;
+    private float tmpLeft = -1f;
+    private float tmpRight = -1f;
 
     private DataSet x;
 
@@ -135,7 +135,7 @@ public class SelectWindowView extends RelativeLayout {
 
                         tmpX = x;
 
-                        if (tmpRight != 0f)
+                        if (tmpRight != -1f)
                             pushChangeBorder(toLeftValue, tmpRight, 1);
                         else
                             pushChangeBorder(toLeftValue, getWidth() - rightBorder.getWidth(), 1);
@@ -188,7 +188,7 @@ public class SelectWindowView extends RelativeLayout {
 
                         tmpX = x;
 
-                        if (tmpLeft != 0f)
+                        if (tmpLeft != -1f)
                             pushChangeBorder(tmpLeft, tmpLeft + window.getWidth(), 1);
                         else
                             pushChangeBorder(getWidth() - leftBorder.getWidth(), getWidth() - rightBorder.getWidth(), 1);
