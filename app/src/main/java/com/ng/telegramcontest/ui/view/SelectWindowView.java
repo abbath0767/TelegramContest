@@ -35,6 +35,9 @@ public class SelectWindowView extends RelativeLayout {
     private View rightBorderTouch;
     private Border currentBorder;
 
+    private float tmpLeft = 0f;
+    private float tmpRight = 0f;
+
     private DataSet x;
 
     private BorderChangeListener listener;
@@ -48,12 +51,10 @@ public class SelectWindowView extends RelativeLayout {
         rightBorderTouch = findViewById(R.id.right_border_touch);
 
         window.setOnTouchListener(new OnTouchListener() {
-            //            int tmpX = 0;
-            float tmpX = 0;
+            float tmpX = 0f;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-//                int x = Math.round(event.getRawX());
                 float x = event.getRawX();
 
                 switch (event.getAction()) {
@@ -61,7 +62,6 @@ public class SelectWindowView extends RelativeLayout {
                         tmpX = x;
                         return true;
                     case MotionEvent.ACTION_MOVE:
-//                        int delta = tmpX - x;
                         float delta = tmpX - x;
 
                         RelativeLayout.LayoutParams paramsLeft = (RelativeLayout.LayoutParams) leftBorder.getLayoutParams();
@@ -86,13 +86,13 @@ public class SelectWindowView extends RelativeLayout {
                         }
 
                         tmpX = x;
-
-                        pushChangeBorder(toLeftValue, toLeftValue + window.getWidth(), 0);
+                        tmpLeft = toLeftValue;
+                        tmpRight = toLeftValue + window.getWidth();
+                        pushChangeBorder(tmpLeft, tmpRight, 0);
 
                         return true;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
-//                        pushChangeBorder();
                         tmpX = 0;
                         return true;
                 }
@@ -100,11 +100,11 @@ public class SelectWindowView extends RelativeLayout {
             }
         });
         leftBorderTouch.setOnTouchListener(new OnTouchListener() {
-            int tmpX = 0;
+            float tmpX = 0f;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int x = Math.round(event.getRawX());
+                float x = event.getRawX();
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
@@ -112,12 +112,12 @@ public class SelectWindowView extends RelativeLayout {
                         return true;
                     }
                     case MotionEvent.ACTION_MOVE: {
-                        int delta = tmpX - x;
+                        float delta = tmpX - x;
 
                         RelativeLayout.LayoutParams paramsLeft = (RelativeLayout.LayoutParams) leftBorder.getLayoutParams();
                         RelativeLayout.LayoutParams paramsWindow = (RelativeLayout.LayoutParams) window.getLayoutParams();
-                        int toLeftValue = paramsLeft.width - delta;
-                        int windowWidth = paramsWindow.width + delta;
+                        float toLeftValue = paramsLeft.width - delta;
+                        float windowWidth = paramsWindow.width + delta;
 
                         if (toLeftValue <= 0) {
                             toLeftValue = 0;
@@ -126,17 +126,20 @@ public class SelectWindowView extends RelativeLayout {
                         if ((toLeftValue + rightBorder.getWidth()) > getWidth() * 0.9) {
                             tmpX = x;
                             return true;
-                        }
-
-                        if (toLeftValue != 0) {
-                            paramsLeft.width = toLeftValue;
+                        } else {
+                            paramsLeft.width = (int) toLeftValue;
                             leftBorder.setLayoutParams(paramsLeft);
-                            paramsWindow.width = windowWidth;
+                            paramsWindow.width = (int) windowWidth + 1;
                             window.setLayoutParams(paramsWindow);
                         }
 
                         tmpX = x;
-                        pushChangeBorder(1);
+
+                        if (tmpRight != 0f)
+                            pushChangeBorder(toLeftValue, tmpRight, 1);
+                        else
+                            pushChangeBorder(toLeftValue, getWidth() - rightBorder.getWidth(), 1);
+
                         return true;
                     }
                     case MotionEvent.ACTION_UP:
@@ -150,11 +153,11 @@ public class SelectWindowView extends RelativeLayout {
             }
         });
         rightBorderTouch.setOnTouchListener(new OnTouchListener() {
-            int tmpX = 0;
+            float tmpX = 0f;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int x = Math.round(event.getRawX());
+                float x = event.getRawX();
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
@@ -162,13 +165,12 @@ public class SelectWindowView extends RelativeLayout {
                         return true;
                     }
                     case MotionEvent.ACTION_MOVE: {
-                        int delta = tmpX - x;
+                        float delta = tmpX - x;
 
                         RelativeLayout.LayoutParams paramsRight = (RelativeLayout.LayoutParams) rightBorder.getLayoutParams();
                         RelativeLayout.LayoutParams paramsWindow = (RelativeLayout.LayoutParams) window.getLayoutParams();
-
-                        int toRightValue = paramsRight.width + delta;
-                        int windowWidth = paramsWindow.width - delta;
+                        float toRightValue = paramsRight.width + delta;
+                        float windowWidth = paramsWindow.width - delta;
 
                         if (toRightValue <= 0) {
                             toRightValue = 0;
@@ -177,17 +179,20 @@ public class SelectWindowView extends RelativeLayout {
                         if ((toRightValue + leftBorder.getWidth()) > getWidth() * 0.9) {
                             tmpX = x;
                             return true;
-                        }
-
-                        if (toRightValue != 0) {
-                            paramsRight.width = toRightValue;
+                        } else {
+                            paramsRight.width = (int) toRightValue;
                             rightBorder.setLayoutParams(paramsRight);
-                            paramsWindow.width = windowWidth;
+                            paramsWindow.width = (int) windowWidth + 1;
                             window.setLayoutParams(paramsWindow);
                         }
 
                         tmpX = x;
-                        pushChangeBorder(1);
+
+                        if (tmpLeft != 0f)
+                            pushChangeBorder(tmpLeft, tmpLeft + window.getWidth(), 1);
+                        else
+                            pushChangeBorder(getWidth() - leftBorder.getWidth(), getWidth() - rightBorder.getWidth(), 1);
+
                         return true;
                     }
                     case MotionEvent.ACTION_UP:

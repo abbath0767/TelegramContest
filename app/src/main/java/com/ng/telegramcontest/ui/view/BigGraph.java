@@ -227,10 +227,9 @@ public class BigGraph extends View {
 
         int countOfPoint = rightIndex - leftIndex + 1;
         if (tmpType != type && type == 0) {
-            tmpType = type;
             tmpCount = countOfPoint;
         }
-        if (tmpCount != countOfPoint) {
+        if (tmpCount != countOfPoint && type == 0) {
             countOfPoint = Math.max(countOfPoint, tmpCount);
             tmpCount = countOfPoint;
             leftIndex = rightIndex - countOfPoint + 1;
@@ -238,6 +237,7 @@ public class BigGraph extends View {
                 leftIndex = 0;
             }
         }
+        tmpType = type;
 
         points[0] = new float[countOfPoint];
         for (int i = 0; i < countOfPoint; i++) {
