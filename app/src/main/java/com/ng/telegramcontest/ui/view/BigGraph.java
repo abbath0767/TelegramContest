@@ -6,7 +6,9 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Handler;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
@@ -122,6 +124,8 @@ public class BigGraph extends View {
         super.onDraw(canvas);
     }
 
+    private boolean needPrint = false;
+
     private void drawLines(Canvas canvas) {
         for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
             mLinePaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex].getColor()));
@@ -134,15 +138,17 @@ public class BigGraph extends View {
                     prevX = points[0][i];
                     prevY = bottomBorderY - points[chartIndex + 1][i];
                 } else {
-//                    if (chartIndex == 0) {
-//                        Log.d("TAG", "DRAW LINE FROM: " + prevX + " : " + prevY + " to: " + points[0][i] + " : " + (bottomBorderY - points[chartIndex + 1][i]));
-//                    }
+                    if (chartIndex == 0 && needPrint) {
+                        Log.d("TAG", "DRAW LINE FROM: " + prevX + " : " + prevY + " to: " + points[0][i] + " : " + (bottomBorderY - points[chartIndex + 1][i]));
+                    }
                     canvas.drawLine(prevX, prevY, points[0][i], bottomBorderY - points[chartIndex + 1][i], mLinePaint);
                     prevX = points[0][i];
                     prevY = bottomBorderY - points[chartIndex + 1][i];
                 }
             }
         }
+
+        needPrint = !needPrint;
     }
 
     private int getAlphaFor(int chartIndex) {
@@ -206,7 +212,6 @@ public class BigGraph extends View {
         initPoints(false, -1, -1, type);
     }
 
-    //todo fix it! potential change from and to to float values
     private void initPoints(boolean customExtremum, long min, long max, final int type) {
         points = new float[mChartData.getDataSets().length + 1][];
         float width = getWidth();
@@ -225,13 +230,18 @@ public class BigGraph extends View {
             }
         }
 
-        int countOfPoint = rightIndex - leftIndex;
+//        int countOfPoint = rightIndex - leftIndex;
+        int countOfPoint = rightIndex - leftIndex + 1;
         if (tmpType != type && type == 0) {
             tmpType = type;
             tmpCount = countOfPoint;
         }
         if (tmpCount != countOfPoint) {
-            countOfPoint = tmpCount;
+            //todo new code
+            countOfPoint = Math.max(countOfPoint, tmpCount);
+            tmpCount = countOfPoint;
+            //todo end new code
+//                    countOfPoint = tmpCount;
             leftIndex = rightIndex - countOfPoint;
             if (leftIndex < 0)
                 leftIndex = 0;
@@ -259,7 +269,8 @@ public class BigGraph extends View {
                     continue;
                 }
                 long[] y = mChartData.getDataSets()[chartIndex].getValues();
-                for (int i = leftIndex; i < rightIndex; i++) {
+//                for (int i = leftIndex; i < rightIndex; i++) {
+                for (int i = leftIndex; i <= rightIndex; i++) {
                     if (!inited) {
                         inited = true;
                         currentYMin = y[i];
@@ -280,7 +291,8 @@ public class BigGraph extends View {
         for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
             points[chartIndex + 1] = new float[countOfPoint];
             long[] y = mChartData.getDataSets()[chartIndex].getValues();
-            for (int i = leftIndex; i < rightIndex; i++) {
+//            for (int i = leftIndex; i < rightIndex; i++) {
+            for (int i = leftIndex; i <= rightIndex; i++) {
                 points[chartIndex + 1][i - leftIndex] = (y[i] - currentYMin) * borderedHeight / delta;
             }
         }
@@ -312,6 +324,15 @@ public class BigGraph extends View {
         });
 
         dataIsInit = true;
+
+        Handler h = new Handler();
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.d("TAG", "PUSH!");
+                pushBorderChange(630f, 996f, 0);
+            }
+        }, 2000);
     }
 
     @Override
