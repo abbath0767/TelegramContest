@@ -97,7 +97,7 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
 
 
     @Override
-    public void onBorderChange(int fromX, int toX, int type) {
+    public void onBorderChange(float fromX, float toX, int type) {
         mBigGraph.pushBorderChange(fromX, toX, type);
     }
 

@@ -48,50 +48,47 @@ public class SelectWindowView extends RelativeLayout {
         rightBorderTouch = findViewById(R.id.right_border_touch);
 
         window.setOnTouchListener(new OnTouchListener() {
-            int tmpX = 0;
+            //            int tmpX = 0;
+            float tmpX = 0;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int x = Math.round(event.getRawX());
+//                int x = Math.round(event.getRawX());
+                float x = event.getRawX();
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         tmpX = x;
                         return true;
                     case MotionEvent.ACTION_MOVE:
-                        int delta = tmpX - x;
+//                        int delta = tmpX - x;
+                        float delta = tmpX - x;
 
                         RelativeLayout.LayoutParams paramsLeft = (RelativeLayout.LayoutParams) leftBorder.getLayoutParams();
                         RelativeLayout.LayoutParams paramsRight = (RelativeLayout.LayoutParams) rightBorder.getLayoutParams();
-                        int toLeftValue = paramsLeft.width - delta;
-                        int toRightValue = paramsRight.width + delta;
+                        float toLeftValue = paramsLeft.width - delta;
 
                         if (toLeftValue <= 0) {
                             toLeftValue = 0;
                         }
-                        if (toRightValue <= 0) {
-                            toRightValue = 0;
-                        }
 
-                        if (toLeftValue != 0 && toRightValue != 0) {
-                            paramsRight.width = toRightValue;
-                            rightBorder.setLayoutParams(paramsRight);
-                            paramsLeft.width = toLeftValue;
-                            leftBorder.setLayoutParams(paramsLeft);
-                        } else if (toLeftValue == 0) {
-                            paramsRight.width = getWidth() - window.getWidth();
-                            rightBorder.setLayoutParams(paramsRight);
-                            paramsLeft.width = 0;
-                            leftBorder.setLayoutParams(paramsLeft);
-                        } else {
+                        if (toLeftValue + window.getWidth() >= getWidth()) {
+                            toLeftValue = getWidth() - window.getWidth();
                             paramsRight.width = 0;
                             rightBorder.setLayoutParams(paramsRight);
-                            paramsLeft.width = getWidth() - window.getWidth();
+                            paramsLeft.width = (int) toLeftValue;
+                            leftBorder.setLayoutParams(paramsLeft);
+                        } else {
+                            paramsRight.width = getWidth() - (int) toLeftValue - window.getWidth();
+                            rightBorder.setLayoutParams(paramsRight);
+                            paramsLeft.width = (int) toLeftValue;
                             leftBorder.setLayoutParams(paramsLeft);
                         }
 
                         tmpX = x;
-                        pushChangeBorder(0);
+
+                        pushChangeBorder(toLeftValue, toLeftValue + window.getWidth(), 0);
+
                         return true;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
@@ -227,6 +224,12 @@ public class SelectWindowView extends RelativeLayout {
         }, 1);
     }
 
+    private void pushChangeBorder(float from, float to, int type) {
+        if (listener != null) {
+            listener.onBorderChange(from, to, type);
+        }
+    }
+
     private void pushChangeBorder(int type) {
         if (listener != null) {
             listener.onBorderChange(window.getLeft(), window.getRight(), type);
@@ -260,6 +263,6 @@ public class SelectWindowView extends RelativeLayout {
     }
 
     public interface BorderChangeListener {
-        void onBorderChange(int fromX, int toX, int type);
+        void onBorderChange(float fromX, float toX, int type);
     }
 }
