@@ -6,9 +6,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.Handler;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
@@ -138,9 +136,6 @@ public class BigGraph extends View {
                     prevX = points[0][i];
                     prevY = bottomBorderY - points[chartIndex + 1][i];
                 } else {
-                    if (chartIndex == 0 && needPrint) {
-                        Log.d("TAG", "DRAW LINE FROM: " + prevX + " : " + prevY + " to: " + points[0][i] + " : " + (bottomBorderY - points[chartIndex + 1][i]));
-                    }
                     canvas.drawLine(prevX, prevY, points[0][i], bottomBorderY - points[chartIndex + 1][i], mLinePaint);
                     prevX = points[0][i];
                     prevY = bottomBorderY - points[chartIndex + 1][i];
@@ -187,7 +182,7 @@ public class BigGraph extends View {
             boolean inited = false;
             for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
                 long[] y = mChartData.getDataSets()[chartIndex].getValues();
-                for (int i = leftIndex; i < rightIndex; i++) {
+                for (int i = leftIndex; i <= rightIndex; i++) {
                     if (!inited) {
                         inited = true;
                         currentMin = y[i];
@@ -230,21 +225,18 @@ public class BigGraph extends View {
             }
         }
 
-//        int countOfPoint = rightIndex - leftIndex;
         int countOfPoint = rightIndex - leftIndex + 1;
         if (tmpType != type && type == 0) {
             tmpType = type;
             tmpCount = countOfPoint;
         }
         if (tmpCount != countOfPoint) {
-            //todo new code
             countOfPoint = Math.max(countOfPoint, tmpCount);
             tmpCount = countOfPoint;
-            //todo end new code
-//                    countOfPoint = tmpCount;
-            leftIndex = rightIndex - countOfPoint;
-            if (leftIndex < 0)
+            leftIndex = rightIndex - countOfPoint + 1;
+            if (leftIndex < 0) {
                 leftIndex = 0;
+            }
         }
 
         points[0] = new float[countOfPoint];
@@ -256,7 +248,6 @@ public class BigGraph extends View {
             points[0][i] = points[0][i] * (float) width / points[0][countOfPoint - 1];
         }
 
-        //todo FIND maxmin
         boolean inited = false;
         long currentYMin = 0;
         long currentYMax = 0;
@@ -269,7 +260,6 @@ public class BigGraph extends View {
                     continue;
                 }
                 long[] y = mChartData.getDataSets()[chartIndex].getValues();
-//                for (int i = leftIndex; i < rightIndex; i++) {
                 for (int i = leftIndex; i <= rightIndex; i++) {
                     if (!inited) {
                         inited = true;
@@ -291,7 +281,6 @@ public class BigGraph extends View {
         for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
             points[chartIndex + 1] = new float[countOfPoint];
             long[] y = mChartData.getDataSets()[chartIndex].getValues();
-//            for (int i = leftIndex; i < rightIndex; i++) {
             for (int i = leftIndex; i <= rightIndex; i++) {
                 points[chartIndex + 1][i - leftIndex] = (y[i] - currentYMin) * borderedHeight / delta;
             }
@@ -325,14 +314,14 @@ public class BigGraph extends View {
 
         dataIsInit = true;
 
-        Handler h = new Handler();
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Log.d("TAG", "PUSH!");
-                pushBorderChange(630f, 996f, 0);
-            }
-        }, 2000);
+//        Handler h = new Handler();
+//        h.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                Log.d("TAG", "PUSH!");
+//                pushBorderChange(630f, 996f, 0);
+//            }
+//        }, 2000);
     }
 
     @Override
@@ -400,7 +389,7 @@ public class BigGraph extends View {
                 continue;
             }
             long[] y = mChartData.getDataSets()[chartIndex].getValues();
-            for (int i = leftIndex; i < rightIndex; i++) {
+            for (int i = leftIndex; i <= rightIndex; i++) {
                 if (!inited) {
                     inited = true;
                     newMin = y[i];
