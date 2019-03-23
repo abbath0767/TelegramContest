@@ -262,26 +262,8 @@ public class BigGraph extends View {
         int step = countOfPoint / PONT_COUNT;
         int leftIndexTime = 0;
         int rightIndexTime = 0;
-//        Log.d("TAG", "count: " + countOfPoint + " step: " + step + " length: " + xTimeCoord.length);
-//        for (int i = 0; i < xSmallCoord.length; i++) {
-//            if (i % (step + 1) == 0) {
-//                Log.d("TAG", "potential point: " + xSmallCoord[i] + " i: " + i);
-//                if (xSmallCoord[i] <= from) {
-//                    leftIndexTime = i;
-//                }
-//                if (xSmallCoord[i] <= to) {
-//                    if (i == xSmallCoord.length - 1) {
-//                        rightIndexTime = xSmallCoord.length - 1;
-//                    } else {
-//                        rightIndexTime = i + 1;
-//                    }
-//                }
-//            }
-//        }
-//        Log.d("TAG", "from: " + from + " to: " + to);
-//        Log.d("TAG", "left index of time: " + leftIndexTime + " right index time: " + rightIndexTime);
-//        Log.d("TAG", "valueLeft: " + xSmallCoord[leftIndexTime] + " value right: " + xSmallCoord[rightIndexTime]);
         boolean needSmall = false;
+        Log.d("TAG", "step: " + step + " count: " + countOfPoint);
         for (int i = 0; i < xSmallCoord.length / (step + 1); i++) {
             int index = xSmallCoord.length - 1 - (i * (step + 1));
             Log.d("TAG", "Stepped xCoord value: " + xSmallCoord[index] + " index: " + index + " i: " + i);
@@ -304,22 +286,12 @@ public class BigGraph extends View {
         Log.d("TAG", "left index of time: " + leftIndexTime + " right index time: " + rightIndexTime);
         Log.d("TAG", "valueLeft: " + xSmallCoord[leftIndexTime] + " value right: " + xSmallCoord[rightIndexTime]);
         Log.d("TAG", "len:" + xTimeCoord.length);
-        for (int i = xTimeCoord.length - 1; i >= 0; i--) {
-            Log.d("TAG", "i: " + i + " xSmall index: " + (i * (step + 1) + leftIndexTime) + " value: " + xSmallCoord[i * (step + 1) + leftIndexTime]);
-            xTimeCoord[i] = width * (xSmallCoord[i * (step + 1) + leftIndexTime] - from) / window;
+//        for (int i = xTimeCoord.length - 1; i >= 0; i--) {
+        for (int i = xTimeCoord.length; i > 0; i--) {
+            Log.d("TAG", "i: " + i + " xSmall index: " + (i * (step + 1) + leftIndexTime));
+            Log.d("TAG", "value: " + xSmallCoord[i * (step + 1) + leftIndexTime]);
+            xTimeCoord[i - 1] = width * (xSmallCoord[i * (step + 1) + leftIndexTime] - from) / window;
         }
-//        for (int i = 0; i < xTimeCoord.length; i++) {
-//            Log.d("TAG", "i: " + i + " xSmall index: " + (i * (step + 1) + leftIndexTime) + " value: " + xSmallCoord[i * (step + 1) + leftIndexTime]);
-//            xTimeCoord[i] = width * (xSmallCoord[i * (step + 1) + leftIndexTime] - from) / window;
-//        }
-//        for (int i = leftIndexTime; i < rightIndexTime; i++) {
-//            if (i % (step + 1) == 0) {
-//                Log.d("TAG", "i: " + i + " step + 1 " + (step + 1));
-//                Log.d("TAG", "point in border for time: " + xSmallCoord[i] + " for i: " + i + " counter: " + counter);
-//                xTimeCoord[counter] = width * (xSmallCoord[i] - from) / window;
-//                counter++;
-//            }
-//        }
         Log.d("TAG", "Time coord: " + Arrays.toString(xTimeCoord));
 
         boolean inited = false;
