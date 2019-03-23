@@ -2,6 +2,7 @@ package com.ng.telegramcontest.ui.view;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RelativeLayout;
@@ -76,10 +77,10 @@ public class SelectWindowView extends RelativeLayout {
                             toLeftValue = getWidth() - window.getWidth();
                             paramsRight.width = 0;
                             rightBorder.setLayoutParams(paramsRight);
-                            paramsLeft.width = (int) toLeftValue;
+                            paramsLeft.width = Math.round(toLeftValue);
                             leftBorder.setLayoutParams(paramsLeft);
                         } else {
-                            paramsRight.width = getWidth() - (int) toLeftValue - window.getWidth();
+                            paramsRight.width = getWidth() - Math.round(toLeftValue) - window.getWidth();
                             rightBorder.setLayoutParams(paramsRight);
                             paramsLeft.width = (int) toLeftValue;
                             leftBorder.setLayoutParams(paramsLeft);
@@ -127,14 +128,14 @@ public class SelectWindowView extends RelativeLayout {
                             tmpX = x;
                             return true;
                         } else {
-                            paramsLeft.width = (int) toLeftValue;
+                            paramsLeft.width = Math.round(toLeftValue);
                             leftBorder.setLayoutParams(paramsLeft);
-                            paramsWindow.width = (int) windowWidth + 1;
+                            paramsWindow.width = (int) windowWidth;
                             window.setLayoutParams(paramsWindow);
                         }
 
                         tmpX = x;
-
+                        tmpLeft = toLeftValue;
                         if (tmpRight != -1f)
                             pushChangeBorder(toLeftValue, tmpRight, 1);
                         else
@@ -180,16 +181,16 @@ public class SelectWindowView extends RelativeLayout {
                             tmpX = x;
                             return true;
                         } else {
-                            paramsRight.width = (int) toRightValue;
+                            paramsRight.width = Math.round(toRightValue);
                             rightBorder.setLayoutParams(paramsRight);
-                            paramsWindow.width = (int) windowWidth + 1;
+                            paramsWindow.width = (int) windowWidth;
                             window.setLayoutParams(paramsWindow);
                         }
 
                         tmpX = x;
-
+                        tmpRight = getWidth() - rightBorder.getWidth();
                         if (tmpLeft != -1f)
-                            pushChangeBorder(tmpLeft, tmpLeft + window.getWidth(), 1);
+                            pushChangeBorder(tmpLeft, getWidth() - rightBorder.getWidth(), 1);
                         else
                             pushChangeBorder(getWidth() - leftBorder.getWidth(), getWidth() - rightBorder.getWidth(), 1);
 

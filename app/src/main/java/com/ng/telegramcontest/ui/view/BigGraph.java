@@ -63,12 +63,15 @@ public class BigGraph extends View {
     private ValueAnimator alphaAnimator;
     private long currentMax;
     private long currentMin;
+    private long drawMex;
+    private long drawMin;
     private boolean dataIsInit = false;
     private boolean firstBorderPush = true;
     private float[][] points;
     private float bottomBorderY = 0f;
     private float bottomDateY = 0f;
     private float topBorderY = 0f;
+    private float altTopBorderY = 0f;
     private float borderedHeight = 0f;
 
     private float[] xSmallCoord;
@@ -109,14 +112,17 @@ public class BigGraph extends View {
         testPaint = new Paint();
         testPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_2));
         testPaint.setColor(Color.RED);
+
+        xTimeCoord = new float[PONT_COUNT];
+        preparedDateFormatsIndexes = new int[PONT_COUNT];
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        float topBorderY = getHeight() - getHeight() * 0.9f;
+//        float topBorderY = getHeight() - getHeight() * 0.9f;
         float leftBorder = 16 * density;
         canvas.drawText(FOLLOWERS, leftBorder, topBorderY, mTextPaint);
-        canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
+//        canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
 
         if (!dataIsInit) {
             super.onDraw(canvas);
@@ -152,6 +158,14 @@ public class BigGraph extends View {
         float textWidth = mDatePaint.measureText(preparedDateFormats[0]);
         for (int i = 0; i < xTimeCoord.length; i++) {
             canvas.drawText(preparedDateFormats[preparedDateFormatsIndexes[i]], xTimeCoord[i] - textWidth / 2f, bottomDateY, mDatePaint);
+        }
+
+        float step = (bottomBorderY - altTopBorderY) / 5;
+        float topValue = getHeight() - topBorderY - (getHeight() - bottomBorderY);
+        for (int i = 0; i < 6; i++) {
+            canvas.drawLine(0, bottomBorderY - step * i, getWidth(), bottomBorderY - step * i, mSeparatorPaint);
+            String text = String.valueOf(Math.round(((step * i) * (drawMex - drawMin) / topValue) + drawMin));
+            canvas.drawText(text, 0f, bottomBorderY - step * i, mDatePaint);
         }
     }
 
@@ -259,9 +273,7 @@ public class BigGraph extends View {
             points[0][i] = width * (xSmallCoord[i + leftIndex] - from) / window;
         }
 
-        xTimeCoord = new float[PONT_COUNT];
-        preparedDateFormatsIndexes = new int[PONT_COUNT];
-        int step = countOfPoint / (PONT_COUNT - 2);
+        int step = Math.round(countOfPoint / (float) (PONT_COUNT - 2));
         int leftIndexTime = 0;
         int rightIndexTime = 0;
         for (int i = 0; i < xSmallCoord.length / step; i++) {
@@ -294,6 +306,8 @@ public class BigGraph extends View {
         if (customExtremum) {
             currentYMin = min;
             currentYMax = max;
+            drawMin = min;
+            drawMex = max;
         } else {
             for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
                 if (!mSelectedCharts[chartIndex]) {
@@ -315,6 +329,9 @@ public class BigGraph extends View {
                     }
                 }
             }
+
+            drawMin = currentYMin;
+            drawMex = currentYMax;
         }
 
         long delta = currentYMax - currentYMin;
@@ -361,6 +378,7 @@ public class BigGraph extends View {
         bottomBorderY = height * 0.9f;
         bottomDateY = height - (height - bottomBorderY) / 2f;
         topBorderY = height * 0.1f;
+        altTopBorderY = topBorderY * 2f;
         borderedHeight = bottomBorderY - topBorderY;
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
