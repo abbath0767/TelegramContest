@@ -259,19 +259,20 @@ public class BigGraph extends View {
         }
 
         xTimeCoord = new float[PONT_COUNT];
-        int step = countOfPoint / PONT_COUNT;
+        int step = countOfPoint / (PONT_COUNT - 2);
         int leftIndexTime = 0;
         int rightIndexTime = 0;
-        boolean needSmall = false;
+//        boolean needSmall = false;
         Log.d("TAG", "step: " + step + " count: " + countOfPoint);
-        for (int i = 0; i < xSmallCoord.length / (step + 1); i++) {
-            int index = xSmallCoord.length - 1 - (i * (step + 1));
+        for (int i = 0; i < xSmallCoord.length / step; i++) {
+            int index = xSmallCoord.length - i * step - 1;
             Log.d("TAG", "Stepped xCoord value: " + xSmallCoord[index] + " index: " + index + " i: " + i);
             if (xSmallCoord[index] >= from) {
-                leftIndexTime = index - (step + 1);
+                leftIndexTime = index - step;
                 if (leftIndexTime < 0) {
-                    needSmall = true;
-                    leftIndexTime = step + 1;
+//                    needSmall = true;
+//                    leftIndexTime = step + 1;
+                    leftIndexTime = 0;
                 }
             }
             if (xSmallCoord[index] >= to) {
@@ -279,8 +280,8 @@ public class BigGraph extends View {
             }
         }
 
-        if (needSmall)
-            xTimeCoord = new float[xTimeCoord.length - 1];
+//        if (needSmall)
+//            xTimeCoord = new float[xTimeCoord.length - 1];
 
         Log.d("TAG", "NEW from: " + from + " to: " + to);
         Log.d("TAG", "left index of time: " + leftIndexTime + " right index time: " + rightIndexTime);
@@ -288,9 +289,15 @@ public class BigGraph extends View {
         Log.d("TAG", "len:" + xTimeCoord.length);
 //        for (int i = xTimeCoord.length - 1; i >= 0; i--) {
         for (int i = xTimeCoord.length; i > 0; i--) {
-            Log.d("TAG", "i: " + i + " xSmall index: " + (i * (step + 1) + leftIndexTime));
-            Log.d("TAG", "value: " + xSmallCoord[i * (step + 1) + leftIndexTime]);
-            xTimeCoord[i - 1] = width * (xSmallCoord[i * (step + 1) + leftIndexTime] - from) / window;
+            int index = rightIndexTime - (xTimeCoord.length - i) * step;
+            Log.d("TAG", "i: " + i + " xSmall index: " + index);
+            if (index < 0) {
+                Log.d("TAG", "value: " + (xTimeCoord[i] - (xTimeCoord[i + 1] - xTimeCoord[i])));
+                xTimeCoord[i - 1] = xTimeCoord[i] - (xTimeCoord[i + 1] - xTimeCoord[i]);
+                continue;
+            }
+            xTimeCoord[i - 1] = width * (xSmallCoord[index] - from) / window;
+            Log.d("TAG", "value: " + xSmallCoord[index]);
         }
         Log.d("TAG", "Time coord: " + Arrays.toString(xTimeCoord));
 
