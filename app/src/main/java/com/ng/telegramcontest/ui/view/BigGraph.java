@@ -2,10 +2,12 @@ package com.ng.telegramcontest.ui.view;
 
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -16,12 +18,13 @@ import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 public class BigGraph extends View {
 
     private final static String FOLLOWERS = "Followers";
-    private final static int POINT_COUNT = 7;
+    private final static int PONT_COUNT = 7;
     private final static SimpleDateFormat format = new SimpleDateFormat("MMM dd");
 
     public BigGraph(Context context) {
@@ -36,6 +39,7 @@ public class BigGraph extends View {
         this(context, attrs, defStyleAttr, 0);
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public BigGraph(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         initPaints();
@@ -68,8 +72,11 @@ public class BigGraph extends View {
     private float borderedHeight = 0f;
 
     private float[] xSmallCoord;
+    private float[] xTimeCoord;
     private int tmpCount = 0;
     private int tmpType = -1;
+    private int leftIndex = 0;
+    private int rightIndex = 0;
 
     private float density = getResources().getDisplayMetrics().density;
 
@@ -123,8 +130,6 @@ public class BigGraph extends View {
         super.onDraw(canvas);
     }
 
-    private boolean needPrint = false;
-
     private void drawLines(Canvas canvas) {
         for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
             mLinePaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex].getColor()));
@@ -144,7 +149,9 @@ public class BigGraph extends View {
             }
         }
 
-        needPrint = !needPrint;
+        for (int i = 0; i < xTimeCoord.length; i++) {
+            canvas.drawCircle(xTimeCoord[i], bottomBorderY, 10, testPaint);
+        }
     }
 
     private int getAlphaFor(int chartIndex) {
@@ -166,7 +173,8 @@ public class BigGraph extends View {
         to = toX;
 
         if (firstBorderPush) {
-            int leftIndex = 0, rightIndex = 0;
+            leftIndex = 0;
+            rightIndex = 0;
             for (int i = 0; i < xSmallCoord.length; i++) {
                 if (xSmallCoord[i] <= from) {
                     leftIndex = i;
@@ -198,20 +206,24 @@ public class BigGraph extends View {
                     }
                 }
             }
+
             firstBorderPush = false;
         }
 
         initPoints(type);
     }
 
+    //call only after change select border
     private void initPoints(final int type) {
         initPoints(false, -1, -1, type);
     }
 
+    //call only after change select and select border
     private void initPoints(boolean customExtremum, long min, long max, final int type) {
         points = new float[mChartData.getDataSets().length + 1][];
         float width = getWidth();
-        int leftIndex = 0, rightIndex = 0;
+        leftIndex = 0;
+        rightIndex = 0;
         for (int i = 0; i < xSmallCoord.length; i++) {
             if (xSmallCoord[i] <= from) {
                 leftIndex = i;
@@ -241,13 +253,74 @@ public class BigGraph extends View {
         tmpType = type;
 
         points[0] = new float[countOfPoint];
+        float window = to - from;
         for (int i = 0; i < countOfPoint; i++) {
-            points[0][i] = xSmallCoord[i + leftIndex] - xSmallCoord[leftIndex + 1];
+            points[0][i] = width * (xSmallCoord[i + leftIndex] - from) / window;
         }
 
-        for (int i = 0; i < countOfPoint; i++) {
-            points[0][i] = points[0][i] * (float) width / points[0][countOfPoint - 1];
+        xTimeCoord = new float[PONT_COUNT];
+        int step = countOfPoint / PONT_COUNT;
+        int leftIndexTime = 0;
+        int rightIndexTime = 0;
+//        Log.d("TAG", "count: " + countOfPoint + " step: " + step + " length: " + xTimeCoord.length);
+//        for (int i = 0; i < xSmallCoord.length; i++) {
+//            if (i % (step + 1) == 0) {
+//                Log.d("TAG", "potential point: " + xSmallCoord[i] + " i: " + i);
+//                if (xSmallCoord[i] <= from) {
+//                    leftIndexTime = i;
+//                }
+//                if (xSmallCoord[i] <= to) {
+//                    if (i == xSmallCoord.length - 1) {
+//                        rightIndexTime = xSmallCoord.length - 1;
+//                    } else {
+//                        rightIndexTime = i + 1;
+//                    }
+//                }
+//            }
+//        }
+//        Log.d("TAG", "from: " + from + " to: " + to);
+//        Log.d("TAG", "left index of time: " + leftIndexTime + " right index time: " + rightIndexTime);
+//        Log.d("TAG", "valueLeft: " + xSmallCoord[leftIndexTime] + " value right: " + xSmallCoord[rightIndexTime]);
+        boolean needSmall = false;
+        for (int i = 0; i < xSmallCoord.length / (step + 1); i++) {
+            int index = xSmallCoord.length - 1 - (i * (step + 1));
+            Log.d("TAG", "Stepped xCoord value: " + xSmallCoord[index] + " index: " + index + " i: " + i);
+            if (xSmallCoord[index] >= from) {
+                leftIndexTime = index - (step + 1);
+                if (leftIndexTime < 0) {
+                    needSmall = true;
+                    leftIndexTime = step + 1;
+                }
+            }
+            if (xSmallCoord[index] >= to) {
+                rightIndexTime = index;
+            }
         }
+
+        if (needSmall)
+            xTimeCoord = new float[xTimeCoord.length - 1];
+
+        Log.d("TAG", "NEW from: " + from + " to: " + to);
+        Log.d("TAG", "left index of time: " + leftIndexTime + " right index time: " + rightIndexTime);
+        Log.d("TAG", "valueLeft: " + xSmallCoord[leftIndexTime] + " value right: " + xSmallCoord[rightIndexTime]);
+        Log.d("TAG", "len:" + xTimeCoord.length);
+        for (int i = xTimeCoord.length - 1; i >= 0; i--) {
+            Log.d("TAG", "i: " + i + " xSmall index: " + (i * (step + 1) + leftIndexTime) + " value: " + xSmallCoord[i * (step + 1) + leftIndexTime]);
+            xTimeCoord[i] = width * (xSmallCoord[i * (step + 1) + leftIndexTime] - from) / window;
+        }
+//        for (int i = 0; i < xTimeCoord.length; i++) {
+//            Log.d("TAG", "i: " + i + " xSmall index: " + (i * (step + 1) + leftIndexTime) + " value: " + xSmallCoord[i * (step + 1) + leftIndexTime]);
+//            xTimeCoord[i] = width * (xSmallCoord[i * (step + 1) + leftIndexTime] - from) / window;
+//        }
+//        for (int i = leftIndexTime; i < rightIndexTime; i++) {
+//            if (i % (step + 1) == 0) {
+//                Log.d("TAG", "i: " + i + " step + 1 " + (step + 1));
+//                Log.d("TAG", "point in border for time: " + xSmallCoord[i] + " for i: " + i + " counter: " + counter);
+//                xTimeCoord[counter] = width * (xSmallCoord[i] - from) / window;
+//                counter++;
+//            }
+//        }
+        Log.d("TAG", "Time coord: " + Arrays.toString(xTimeCoord));
 
         boolean inited = false;
         long currentYMin = 0;
@@ -314,15 +387,6 @@ public class BigGraph extends View {
         });
 
         dataIsInit = true;
-
-//        Handler h = new Handler();
-//        h.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                Log.d("TAG", "PUSH!");
-//                pushBorderChange(630f, 996f, 0);
-//            }
-//        }, 2000);
     }
 
     @Override
@@ -371,7 +435,8 @@ public class BigGraph extends View {
         long newMax = -1;
         long newMin = -1;
         boolean inited = false;
-        int leftIndex = 0, rightIndex = 0;
+        leftIndex = 0;
+        rightIndex = 0;
         for (int i = 0; i < xSmallCoord.length; i++) {
             if (xSmallCoord[i] <= from) {
                 leftIndex = i;
