@@ -9,7 +9,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Build;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
@@ -18,7 +17,6 @@ import com.ng.telegramcontest.R;
 import com.ng.telegramcontest.data.ChartData;
 
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 
 public class BigGraph extends View {
@@ -53,6 +51,7 @@ public class BigGraph extends View {
     private Paint mLinePaint;
     private ChartData mChartData;
     private String[] preparedDateFormats;
+    private int[] preparedDateFormatsIndexes;
     private boolean[] mSelectedCharts;
     private int diffX;
     private int previousDiffX = 0;
@@ -68,6 +67,7 @@ public class BigGraph extends View {
     private boolean firstBorderPush = true;
     private float[][] points;
     private float bottomBorderY = 0f;
+    private float bottomDateY = 0f;
     private float topBorderY = 0f;
     private float borderedHeight = 0f;
 
@@ -149,8 +149,9 @@ public class BigGraph extends View {
             }
         }
 
+        float textWidth = mDatePaint.measureText(preparedDateFormats[0]);
         for (int i = 0; i < xTimeCoord.length; i++) {
-            canvas.drawCircle(xTimeCoord[i], bottomBorderY, 10, testPaint);
+            canvas.drawText(preparedDateFormats[preparedDateFormatsIndexes[i]], xTimeCoord[i] - textWidth / 2f, bottomDateY, mDatePaint);
         }
     }
 
@@ -259,19 +260,15 @@ public class BigGraph extends View {
         }
 
         xTimeCoord = new float[PONT_COUNT];
+        preparedDateFormatsIndexes = new int[PONT_COUNT];
         int step = countOfPoint / (PONT_COUNT - 2);
         int leftIndexTime = 0;
         int rightIndexTime = 0;
-//        boolean needSmall = false;
-        Log.d("TAG", "step: " + step + " count: " + countOfPoint);
         for (int i = 0; i < xSmallCoord.length / step; i++) {
             int index = xSmallCoord.length - i * step - 1;
-            Log.d("TAG", "Stepped xCoord value: " + xSmallCoord[index] + " index: " + index + " i: " + i);
             if (xSmallCoord[index] >= from) {
                 leftIndexTime = index - step;
                 if (leftIndexTime < 0) {
-//                    needSmall = true;
-//                    leftIndexTime = step + 1;
                     leftIndexTime = 0;
                 }
             }
@@ -280,26 +277,16 @@ public class BigGraph extends View {
             }
         }
 
-//        if (needSmall)
-//            xTimeCoord = new float[xTimeCoord.length - 1];
-
-        Log.d("TAG", "NEW from: " + from + " to: " + to);
-        Log.d("TAG", "left index of time: " + leftIndexTime + " right index time: " + rightIndexTime);
-        Log.d("TAG", "valueLeft: " + xSmallCoord[leftIndexTime] + " value right: " + xSmallCoord[rightIndexTime]);
-        Log.d("TAG", "len:" + xTimeCoord.length);
-//        for (int i = xTimeCoord.length - 1; i >= 0; i--) {
         for (int i = xTimeCoord.length; i > 0; i--) {
             int index = rightIndexTime - (xTimeCoord.length - i) * step;
-            Log.d("TAG", "i: " + i + " xSmall index: " + index);
+            preparedDateFormatsIndexes[i - 1] = index;
             if (index < 0) {
-                Log.d("TAG", "value: " + (xTimeCoord[i] - (xTimeCoord[i + 1] - xTimeCoord[i])));
                 xTimeCoord[i - 1] = xTimeCoord[i] - (xTimeCoord[i + 1] - xTimeCoord[i]);
+                preparedDateFormatsIndexes[i - 1] = 0;
                 continue;
             }
             xTimeCoord[i - 1] = width * (xSmallCoord[index] - from) / window;
-            Log.d("TAG", "value: " + xSmallCoord[index]);
         }
-        Log.d("TAG", "Time coord: " + Arrays.toString(xTimeCoord));
 
         boolean inited = false;
         long currentYMin = 0;
@@ -372,6 +359,7 @@ public class BigGraph extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         float height = MeasureSpec.getSize(heightMeasureSpec);
         bottomBorderY = height * 0.9f;
+        bottomDateY = height - (height - bottomBorderY) / 2f;
         topBorderY = height * 0.1f;
         borderedHeight = bottomBorderY - topBorderY;
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
