@@ -7,9 +7,13 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
@@ -24,6 +28,7 @@ public class BigGraph extends View {
     private final static String FOLLOWERS = "Followers";
     private final static int PONT_COUNT = 7;
     private final static SimpleDateFormat format = new SimpleDateFormat("MMM dd");
+    private final static SimpleDateFormat formatDetail = new SimpleDateFormat("EEE, MMM dd");
 
     public BigGraph(Context context) {
         this(context, null);
@@ -46,9 +51,15 @@ public class BigGraph extends View {
     private int lastAdded = -1;
     private int lastRemoved = -1;
     private Paint mTextPaint;
+    private Paint mTextPaintDate;
+    private Paint mTextPaintCount;
+    private Paint mTextPaintName;
     private Paint mSeparatorPaint;
     private Paint mDatePaint;
     private Paint mLinePaint;
+    private Paint mWhitePaint;
+    private Paint mDetailPaint;
+    private Paint mShadowPaint;
     private ChartData mChartData;
     private String[] preparedDateFormats;
     private int[] preparedDateFormatsIndexes;
@@ -68,6 +79,7 @@ public class BigGraph extends View {
     private boolean dataIsInit = false;
     private boolean firstBorderPush = true;
     private float[][] points;
+    private float[] detailsPoints;
     private float bottomBorderY = 0f;
     private float bottomDateY = 0f;
     private float topBorderY = 0f;
@@ -80,11 +92,20 @@ public class BigGraph extends View {
     private int tmpType = -1;
     private int leftIndex = 0;
     private int rightIndex = 0;
+    private float valueStep = 0f;
+    private float topValue = 0f;
 
-    private float density = getResources().getDisplayMetrics().density;
+    private float selectedValue = -1f;
+    private int selectedIndex = -1;
+    private boolean deatilIsShow = false;
+
+    private float marginHorizontal = 0f;
+    private float marginVertical = 0f;
 
     //todo test
     private Paint testPaint;
+
+    private float density = getResources().getDisplayMetrics().density;
 
     private void initPaints() {
         mTextPaint = new Paint();
@@ -92,6 +113,25 @@ public class BigGraph extends View {
         mTextPaint.setStyle(Paint.Style.FILL);
         float scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, getResources().getDisplayMetrics());
         mTextPaint.setTextSize(scaledSizeInPixels);
+
+        mTextPaintDate = new Paint();
+        mTextPaintDate.setColor(Color.BLACK);
+        mTextPaintDate.setStyle(Paint.Style.FILL);
+        scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 14, getResources().getDisplayMetrics());
+        mTextPaintDate.setTextSize(scaledSizeInPixels);
+        mTextPaint.setAntiAlias(true);
+
+        mTextPaintCount = new Paint();
+        mTextPaintCount.setStyle(Paint.Style.FILL);
+        scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, getResources().getDisplayMetrics());
+        mTextPaintCount.setTextSize(scaledSizeInPixels);
+        mTextPaintCount.setAntiAlias(true);
+
+        mTextPaintName = new Paint();
+        mTextPaintName.setStyle(Paint.Style.FILL);
+        scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics());
+        mTextPaintName.setTextSize(scaledSizeInPixels);
+        mTextPaintName.setAntiAlias(true);
 
         mDatePaint = new Paint();
         mDatePaint.setColor(getContext().getResources().getColor(R.color.colorDateDay));
@@ -105,24 +145,128 @@ public class BigGraph extends View {
         mLinePaint.setAntiAlias(true);
         setLayerType(LAYER_TYPE_HARDWARE, mLinePaint);
 
+        mDetailPaint = new Paint();
+        mDetailPaint.setColor(Color.parseColor("#fafafa"));
+        mDetailPaint.setAntiAlias(true);
+        setLayerType(LAYER_TYPE_HARDWARE, mDetailPaint);
+
+        mShadowPaint = new Paint();
+        mShadowPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
+        mShadowPaint.setAntiAlias(true);
+        setLayerType(LAYER_TYPE_HARDWARE, mShadowPaint);
+
+        mWhitePaint = new Paint();
+        mWhitePaint.setColor(Color.WHITE);
+        mWhitePaint.setAntiAlias(true);
+        mWhitePaint.setStyle(Paint.Style.FILL);
+        setLayerType(LAYER_TYPE_HARDWARE, mWhitePaint);
+
         mSeparatorPaint = new Paint();
         mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
         mSeparatorPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_1));
 
         testPaint = new Paint();
         testPaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_2));
-        testPaint.setColor(Color.RED);
+        testPaint.setColor(Color.BLUE);
 
         xTimeCoord = new float[PONT_COUNT];
         preparedDateFormatsIndexes = new int[PONT_COUNT];
+
+        marginHorizontal = 8 * density;
+        marginVertical = 6 * density;
+
+        setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                float x = event.getX();
+                detailsPoints = new float[mChartData.getDataSets().length];
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN: {
+                        if (!deatilIsShow) {
+                            deatilIsShow = true;
+                        } else {
+                            selectedIndex = -1;
+                            selectedValue = -1f;
+                            deatilIsShow = false;
+                            postInvalidateOnAnimation();
+                            return true;
+                        }
+
+                        int leftIndex = -1;
+                        for (int i = 0; i < points[0].length; i++) {
+                            if (points[0][i] <= x) {
+                                leftIndex = i;
+                            }
+                        }
+                        int rightIndex = leftIndex + 1;
+                        float leftValue = points[0][leftIndex];
+                        float rightValue = points[0][rightIndex];
+                        float deltaLeft = x - leftValue;
+                        float deltaRight = rightValue - x;
+                        if (deltaLeft < deltaRight) {
+                            selectedIndex = leftIndex;
+                        } else {
+                            selectedIndex = rightIndex;
+                        }
+
+                        selectedValue = points[0][selectedIndex];
+                        for (int i = 0; i < mChartData.getDataSets().length; i++) {
+                            detailsPoints[i] = bottomBorderY - points[i + 1][selectedIndex];
+                        }
+
+                        postInvalidateOnAnimation();
+                        return true;
+                    }
+                    case MotionEvent.ACTION_MOVE: {
+                        if (deatilIsShow) {
+                            int leftIndex = -1;
+                            for (int i = 0; i < points[0].length; i++) {
+                                if (points[0][i] <= x) {
+                                    leftIndex = i;
+                                }
+                            }
+                            int rightIndex = leftIndex + 1;
+                            float leftValue = points[0][leftIndex];
+                            float rightValue = points[0][rightIndex];
+                            float deltaLeft = x - leftValue;
+                            float deltaRight = rightValue - x;
+                            if (deltaLeft < deltaRight) {
+                                selectedIndex = leftIndex;
+                            } else {
+                                selectedIndex = rightIndex;
+                            }
+
+                            selectedValue = points[0][selectedIndex];
+                            for (int i = 0; i < mChartData.getDataSets().length; i++) {
+                                detailsPoints[i] = bottomBorderY - points[i + 1][selectedIndex];
+                            }
+
+                            postInvalidateOnAnimation();
+                        }
+
+                        return true;
+                    }
+                    case MotionEvent.ACTION_CANCEL:
+                    case MotionEvent.ACTION_UP: {
+
+
+                        postInvalidateOnAnimation();
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        });
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-//        float topBorderY = getHeight() - getHeight() * 0.9f;
-        float leftBorder = 16 * density;
-        canvas.drawText(FOLLOWERS, leftBorder, topBorderY, mTextPaint);
-//        canvas.drawLine(0, bottomBorderY, getWidth(), bottomBorderY, mSeparatorPaint);
+        float scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, getResources().getDisplayMetrics());
+        mTextPaint.setTextSize(scaledSizeInPixels);
+        mTextPaint.setColor(getContext().getResources().getColor(R.color.colorPrimary));
+        canvas.drawText(FOLLOWERS, 0, topBorderY, mTextPaint);
 
         if (!dataIsInit) {
             super.onDraw(canvas);
@@ -133,7 +277,109 @@ public class BigGraph extends View {
             drawLines(canvas);
         }
 
+        if (deatilIsShow) {
+            drawDetail(canvas);
+        }
+
         super.onDraw(canvas);
+    }
+
+    private void drawDetail(Canvas canvas) {
+        canvas.drawLine(selectedValue, bottomBorderY, selectedValue, topBorderY, mSeparatorPaint);
+        for (int chartIndex = 1; chartIndex < points.length; chartIndex++) {
+            if (!mSelectedCharts[chartIndex - 1]) {
+                continue;
+            }
+            float y = bottomBorderY - points[chartIndex][selectedIndex];
+            mLinePaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex - 1].getColor()));
+            canvas.drawCircle(selectedValue, y, 15, mLinePaint);
+            canvas.drawCircle(selectedValue, y, 10, mWhitePaint);
+        }
+
+        String dateText = formatDetail.format(new Date(mChartData.getX().getValues()[selectedIndex + leftIndex]));
+        mTextPaintDate.setColor(Color.BLACK);
+        Rect textRectDate = new Rect();
+        mTextPaintDate.getTextBounds(dateText, 0, dateText.length(), textRectDate);
+
+        float addHorizontal = 0f;
+        float addVertical = 0f;
+
+        float widthDate = textRectDate.width() + marginHorizontal * 2;
+        float heightDate = textRectDate.height() + marginVertical * 2;
+
+        float horizontalDeltaPercent = selectedValue / getWidth();
+        Log.d("TAG", "horizontal delta: " + horizontalDeltaPercent);
+
+//        int lines = 0;
+        int counter = 0;
+        float lineWidth = 0f;
+        float tmpWidth = 0f;
+        float maxLineWidth = 0f;
+        float tmpHeight = 0f;
+        for (int i = 0; i < mSelectedCharts.length; i++) {
+            if (mSelectedCharts[i]) {
+                counter++;
+                long value = mChartData.getDataSets()[i].getValues()[selectedIndex + leftIndex];
+                String text = String.valueOf(value);
+                String title = mChartData.getDataSets()[i].getName();
+                Rect countRect = new Rect();
+                Rect titleRect = new Rect();
+                mTextPaintCount.getTextBounds(text, 0, text.length(), countRect);
+                mTextPaintName.getTextBounds(title, 0, title.length(), titleRect);
+                if (counter % 2 != 0) {
+//                    lines++;
+                    lineWidth += Math.max(marginHorizontal * 2f + countRect.width(), marginHorizontal * 2f + titleRect.width());
+                    tmpHeight += countRect.height() + marginVertical * 4f + titleRect.height();
+                } else {
+                    lineWidth += Math.max(marginHorizontal * 2f + countRect.width(), marginVertical * 2f + titleRect.width());
+                    maxLineWidth = Math.max(tmpWidth, lineWidth);
+                    tmpWidth = lineWidth;
+                    lineWidth = 0f;
+                }
+            }
+        }
+
+        //todo test
+        addHorizontal = Math.max(widthDate, maxLineWidth);
+        addVertical = heightDate + tmpHeight;
+
+        float left = points[0][selectedIndex] - addHorizontal * horizontalDeltaPercent;
+        float top = topBorderY;
+        float right = points[0][selectedIndex] + addHorizontal - addHorizontal * horizontalDeltaPercent;
+        float bottom = topBorderY + addVertical;
+
+        RectF rectS = new RectF(left - 3, top - 3, right + 3, bottom + 7);
+        RectF rect = new RectF(left, top, right, bottom);
+        canvas.drawRoundRect(rectS, 15, 15, mShadowPaint);
+        canvas.drawRoundRect(rect, 10, 10, mDetailPaint);
+        canvas.drawText(dateText, left + marginHorizontal, top + marginVertical + textRectDate.height(), mTextPaintDate);
+        counter = 0;
+        float tmpLeft = 0f;
+        tmpHeight = 0f;
+        for (int i = 0; i < mSelectedCharts.length; i++) {
+            if (mSelectedCharts[i]) {
+                mTextPaintCount.setColor(Color.parseColor(mChartData.getDataSets()[i].getColor()));
+                mTextPaintName.setColor(Color.parseColor(mChartData.getDataSets()[i].getColor()));
+                long value = mChartData.getDataSets()[i].getValues()[selectedIndex + leftIndex];
+                String text = String.valueOf(value);
+                String title = mChartData.getDataSets()[i].getName();
+                Rect countRect = new Rect();
+                Rect titleRect = new Rect();
+                mTextPaintCount.getTextBounds(text, 0, text.length(), countRect);
+                mTextPaintName.getTextBounds(title, 0, title.length(), titleRect);
+                if (counter % 2 == 0) {
+                    canvas.drawText(text, left + marginHorizontal, top + marginVertical * 4f + textRectDate.height() + countRect.height() + tmpHeight, mTextPaintCount);
+                    canvas.drawText(title, left + marginHorizontal, top + marginVertical * 4f + textRectDate.height() + countRect.height() + tmpHeight + titleRect.height(), mTextPaintName);
+                    tmpLeft = marginHorizontal * 2f + Math.max(countRect.width(), titleRect.width());
+                } else {
+                    canvas.drawText(text, left + marginHorizontal + tmpLeft, top + marginVertical * 4f + textRectDate.height() + countRect.height() + tmpHeight, mTextPaintCount);
+                    canvas.drawText(title, left + marginHorizontal + tmpLeft, top + marginVertical * 4f + textRectDate.height() + countRect.height() + tmpHeight + titleRect.height(), mTextPaintName);
+                    tmpLeft = 0f;
+                    tmpHeight += marginVertical * 4f + countRect.height() + titleRect.height();
+                }
+                counter++;
+            }
+        }
     }
 
     private void drawLines(Canvas canvas) {
@@ -160,12 +406,12 @@ public class BigGraph extends View {
             canvas.drawText(preparedDateFormats[preparedDateFormatsIndexes[i]], xTimeCoord[i] - textWidth / 2f, bottomDateY, mDatePaint);
         }
 
-        float step = (bottomBorderY - altTopBorderY) / 5;
-        float topValue = getHeight() - topBorderY - (getHeight() - bottomBorderY);
         for (int i = 0; i < 6; i++) {
-            canvas.drawLine(0, bottomBorderY - step * i, getWidth(), bottomBorderY - step * i, mSeparatorPaint);
-            String text = String.valueOf(Math.round(((step * i) * (drawMex - drawMin) / topValue) + drawMin));
-            canvas.drawText(text, 0f, bottomBorderY - step * i, mDatePaint);
+            canvas.drawLine(0, bottomBorderY - valueStep * i, getWidth(), bottomBorderY - valueStep * i, mSeparatorPaint);
+            String text = String.valueOf(Math.round(((valueStep * i) * (drawMex - drawMin) / topValue) + drawMin));
+            if (text.equals("-1"))
+                continue;
+            canvas.drawText(text, 0f, (bottomBorderY - valueStep * i) - 10, mDatePaint);
         }
     }
 
@@ -186,6 +432,12 @@ public class BigGraph extends View {
 
         from = fromX;
         to = toX;
+
+        if (deatilIsShow) {
+            selectedIndex = -1;
+            selectedValue = -1f;
+            deatilIsShow = false;
+        }
 
         if (firstBorderPush) {
             leftIndex = 0;
@@ -380,10 +632,18 @@ public class BigGraph extends View {
         topBorderY = height * 0.1f;
         altTopBorderY = topBorderY * 2f;
         borderedHeight = bottomBorderY - topBorderY;
+        valueStep = (bottomBorderY - altTopBorderY) / 5;
+        topValue = height - topBorderY - (height - bottomBorderY);
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     public void changeSelect(boolean[] selectedCharts) {
+        if (deatilIsShow) {
+            selectedIndex = -1;
+            selectedValue = -1f;
+            deatilIsShow = false;
+        }
+
         int oldCount = 0;
         int newCount = 0;
         for (boolean show : mSelectedCharts) {
@@ -394,7 +654,6 @@ public class BigGraph extends View {
             if (show)
                 newCount++;
         }
-
 
         boolean added = newCount > oldCount;
         if (added) {

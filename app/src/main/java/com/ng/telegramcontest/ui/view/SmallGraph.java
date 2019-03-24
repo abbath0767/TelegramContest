@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
@@ -220,6 +221,8 @@ public class SmallGraph extends View implements OnTaskExecuted {
         }
 
         long delta = currentMaxValue - currentMinValue;
+        if (delta == 0)
+            delta = 1;
         for (int chartIndex = 0; chartIndex < dataSets.length; chartIndex++) {
             result[chartIndex + 1] = new float[count];
             for (int i = 0; i < count; i++) {
