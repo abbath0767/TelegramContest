@@ -13,6 +13,7 @@
 
     <color name="colorSeparatorDay">#1d7b7b7b</color>
     <color name="colorDateDay">#e77b7b7b</color>
+    <color name="colorDateNight">#506372</color>
 
     <color name="colorBorer">#b8f5f6f9</color>
     <color name="colorBorderNight">#ce1d2733</color>

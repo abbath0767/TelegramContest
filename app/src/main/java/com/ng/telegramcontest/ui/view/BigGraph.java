@@ -115,7 +115,7 @@ public class BigGraph extends View {
         mTextPaint.setStyle(Paint.Style.FILL);
         float scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, getResources().getDisplayMetrics());
         mTextPaint.setTextSize(scaledSizeInPixels);
-        Typeface bold = Typeface.create("roboto-medium", Typeface.NORMAL);
+        Typeface bold = Typeface.create("sans-serif-medium", Typeface.NORMAL);
         mTextPaint.setTypeface(bold);
 
         mTextPaintDate = new Paint();
@@ -283,6 +283,7 @@ public class BigGraph extends View {
             mDetailPaint.setColor(getResources().getColor(R.color.colorPrimaryNight));
             mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorPrimaryDarkNight));
             mShadowPaint.setColor(getContext().getResources().getColor(R.color.colorPrimaryDarkNight));
+            mDatePaint.setColor(getContext().getResources().getColor(R.color.colorDateNight));
         } else {
             mTextPaint.setColor(getContext().getResources().getColor(R.color.colorPrimary));
             mPointInnerPaint.setColor(Color.WHITE);
@@ -290,6 +291,7 @@ public class BigGraph extends View {
             mDetailPaint.setColor(getResources().getColor(R.color.defaultBackColor));
             mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
             mShadowPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
+            mDatePaint.setColor(getContext().getResources().getColor(R.color.colorDateDay));
         }
 
         postInvalidateOnAnimation();
