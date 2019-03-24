@@ -3,6 +3,10 @@
     <color name="colorPrimary">#527da3</color>
     <color name="colorPrimaryDark">#426482</color>
 
+    <color name="colorPrimaryNight">#202D3B</color>
+    <color name="colorPrimaryDarkNight">#1D2733</color>
+
+    <color name="defaultBackColor">#fafafa</color>
 
     <color name="colorAccent">#D81B60</color>
 
@@ -10,6 +14,9 @@
     <color name="colorDateDay">#e77b7b7b</color>
 
     <color name="colorBorer">#254e5a94</color>
+    <color name="colorBorderNight">#ce1d2733</color>
     <color name="colorBorerDark">#6e527da3</color>
     <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+    <!--<color name="empty">null</color>-->
 </resources>

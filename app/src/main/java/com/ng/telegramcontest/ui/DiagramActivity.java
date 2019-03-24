@@ -2,13 +2,14 @@ package com.ng.telegramcontest.ui;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -47,8 +48,6 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_diagram);
-        setActionBar();
-        setViews();
 
         chartNumber = getIntent().getExtras().getInt(CHART_NUMBER);
 
@@ -59,18 +58,40 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
             selectedCharts[i] = true;
         }
 
+        boolean isNightTheme = mDataStorage.isNightTheme();
+
+        setActionBar(isNightTheme);
+        setViews(isNightTheme);
+
         initViewData();
     }
 
-    private void setViews() {
+    private void setViews(boolean isNightTheme) {
         mRecyclerView = (RecyclerView) findViewById(R.id.chars_name_recycler);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        mChartNamesAdapter = new ChartNamesAdapter(this, this);
+        mChartNamesAdapter = new ChartNamesAdapter(this, this, isNightTheme);
         mRecyclerView.setAdapter(mChartNamesAdapter);
 
         mDateSelectorView = (DateSelectorView) findViewById(R.id.date_selector_view);
+        mDateSelectorView.setIsNightMode(isNightTheme);
 
         mBigGraph = (BigGraph) findViewById(R.id.big_graph);
+        mBigGraph.setIsNightMode(isNightTheme);
+
+        if (isNightTheme)
+            findViewById(R.id.big_graph_holder).setBackgroundColor(getResources().getColor(R.color.colorPrimaryNight));
+        else
+            findViewById(R.id.big_graph_holder).setBackgroundResource(0);
+    }
+
+    private void setViewsColor(boolean isNightTheme) {
+        mChartNamesAdapter.changeTheme(isNightTheme);
+        mDateSelectorView.setIsNightMode(isNightTheme);
+        mBigGraph.setIsNightMode(isNightTheme);
+        if (isNightTheme)
+            findViewById(R.id.big_graph_holder).setBackgroundColor(getResources().getColor(R.color.colorPrimaryNight));
+        else
+            findViewById(R.id.big_graph_holder).setBackgroundResource(0);
     }
 
     private void initViewData() {
@@ -79,9 +100,32 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
         mBigGraph.initData(mChartData, selectedCharts);
     }
 
-    private void setActionBar() {
+    private void setActionBar(boolean isNightTheme) {
         setSupportActionBar((Toolbar) findViewById(R.id.my_toolbar));
         setTitle(R.string.statistics);
+
+        setActionBarColor(isNightTheme);
+    }
+
+    private void setActionBarColor(boolean isNightTheme) {
+        int colorResBar;
+        int colorResStatusBar;
+        int colorActivityBackground;
+        if (isNightTheme) {
+            colorResBar = R.color.colorPrimaryNight;
+            colorResStatusBar = R.color.colorPrimaryDarkNight;
+            colorActivityBackground = R.color.colorPrimaryDarkNight;
+        } else {
+            colorResBar = R.color.colorPrimary;
+            colorResStatusBar = R.color.colorPrimaryDark;
+            colorActivityBackground = R.color.defaultBackColor;
+        }
+
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(getResources().getColor(colorResBar)));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(getResources().getColor(colorResStatusBar));
+        }
+        findViewById(R.id.parent).setBackgroundColor(getResources().getColor(colorActivityBackground));
     }
 
     @Override
@@ -94,7 +138,6 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
         mDateSelectorView.changeSelect(selectedCharts);
         mBigGraph.changeSelect(selectedCharts);
     }
-
 
     @Override
     public void onBorderChange(float fromX, float toX, int type) {
@@ -111,10 +154,21 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_change_theme) {
-            Log.d("TAG", "Click on change theme");
+            changeTheme();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void changeTheme() {
+        boolean nowIsNight = !mDataStorage.isNightTheme();
+        mDataStorage.setNightMode(nowIsNight);
+        setNightTheme(nowIsNight);
+    }
+
+    private void setNightTheme(boolean nowIsNight) {
+        setActionBarColor(nowIsNight);
+        setViewsColor(nowIsNight);
     }
 
     @Override

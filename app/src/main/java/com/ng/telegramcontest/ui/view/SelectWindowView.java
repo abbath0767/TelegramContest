@@ -2,7 +2,6 @@ package com.ng.telegramcontest.ui.view;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RelativeLayout;
@@ -214,6 +213,16 @@ public class SelectWindowView extends RelativeLayout {
                 pushChangeBorder(0);
             }
         });
+    }
+
+    public void setNightMode(boolean isNightTheme) {
+        if (isNightTheme) {
+            leftBorder.setBackgroundColor(getResources().getColor(R.color.colorBorderNight));
+            rightBorder.setBackgroundColor(getResources().getColor(R.color.colorBorderNight));
+        } else {
+            leftBorder.setBackgroundColor(getResources().getColor(R.color.colorBorer));
+            rightBorder.setBackgroundColor(getResources().getColor(R.color.colorBorer));
+        }
     }
 
     public void initData(final DataSet x) {

@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout android:id="@+id/item_parent"
+                xmlns:android="http://schemas.android.com/apk/res/android"
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/common_48"
                 android:gravity="center_vertical">
 
+    <View
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="24dp"
+        android:background="@color/white"
+        />
+
     <CheckBox
         android:id="@+id/item_chart_checkbox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
+        android:layout_centerVertical="true"
         android:layout_marginLeft="@dimen/common_16"
         android:layout_marginRight="@dimen/common_16"/>
 

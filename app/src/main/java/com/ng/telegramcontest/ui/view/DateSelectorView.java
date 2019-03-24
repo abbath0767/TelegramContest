@@ -49,4 +49,13 @@ public class DateSelectorView extends RelativeLayout {
     public void addOnBorderChangeListener(SelectWindowView.BorderChangeListener listener) {
         mSelectWindowView.addOnBorderChangeListener(listener);
     }
+
+    public void setIsNightMode(boolean isNightTheme) {
+        if (isNightTheme) {
+            setBackgroundColor(getResources().getColor(R.color.colorPrimaryNight));
+        } else {
+            setBackgroundResource(0);
+        }
+        mSelectWindowView.setNightMode(isNightTheme);
+    }
 }

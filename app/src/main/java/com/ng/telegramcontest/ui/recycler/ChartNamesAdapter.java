@@ -11,19 +11,26 @@ public class ChartNamesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     private final Context mContext;
     private final SelectChartListener mSelectChartListener;
+    private boolean isNightTheme;
 
-    public ChartNamesAdapter(Context context, SelectChartListener listener) {
+    public ChartNamesAdapter(Context context, SelectChartListener listener, boolean isNightTheme) {
         this.mContext = context;
         this.mSelectChartListener = listener;
+        this.isNightTheme = isNightTheme;
     }
 
     private DataSet[] mChartNames;
     private boolean[] selected;
 
+    public void changeTheme(boolean isNightTheme) {
+        this.isNightTheme = isNightTheme;
+        notifyDataSetChanged();
+    }
+
     public void setNames(DataSet[] mDataSets, boolean[] selectedCharts) {
         this.mChartNames = mDataSets;
         selected = selectedCharts;
-        this.notifyDataSetChanged();
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -34,7 +41,7 @@ public class ChartNamesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
-        ((ChartNameViewHolder) viewHolder).bind(mChartNames[i], selected[i], i == getItemCount() - 1);
+        ((ChartNameViewHolder) viewHolder).bind(mChartNames[i], selected[i], i == getItemCount() - 1, isNightTheme);
     }
 
     @Override

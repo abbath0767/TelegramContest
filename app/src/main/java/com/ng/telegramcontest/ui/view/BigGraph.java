@@ -11,7 +11,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
@@ -57,7 +56,7 @@ public class BigGraph extends View {
     private Paint mSeparatorPaint;
     private Paint mDatePaint;
     private Paint mLinePaint;
-    private Paint mWhitePaint;
+    private Paint mPointInnerPaint;
     private Paint mDetailPaint;
     private Paint mShadowPaint;
     private ChartData mChartData;
@@ -155,11 +154,11 @@ public class BigGraph extends View {
         mShadowPaint.setAntiAlias(true);
         setLayerType(LAYER_TYPE_HARDWARE, mShadowPaint);
 
-        mWhitePaint = new Paint();
-        mWhitePaint.setColor(Color.WHITE);
-        mWhitePaint.setAntiAlias(true);
-        mWhitePaint.setStyle(Paint.Style.FILL);
-        setLayerType(LAYER_TYPE_HARDWARE, mWhitePaint);
+        mPointInnerPaint = new Paint();
+        mPointInnerPaint.setColor(Color.WHITE);
+        mPointInnerPaint.setAntiAlias(true);
+        mPointInnerPaint.setStyle(Paint.Style.FILL);
+        setLayerType(LAYER_TYPE_HARDWARE, mPointInnerPaint);
 
         mSeparatorPaint = new Paint();
         mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
@@ -261,6 +260,20 @@ public class BigGraph extends View {
         });
     }
 
+    public void setIsNightMode(boolean isNightTheme) {
+        if (isNightTheme) {
+            mPointInnerPaint.setColor(getResources().getColor(R.color.colorPrimaryNight));
+            mTextPaintDate.setColor(Color.WHITE);
+            mDetailPaint.setColor(getResources().getColor(R.color.colorPrimaryNight));
+        } else {
+            mPointInnerPaint.setColor(Color.WHITE);
+            mTextPaintDate.setColor(Color.BLACK);
+            mDetailPaint.setColor(getResources().getColor(R.color.defaultBackColor));
+        }
+
+        postInvalidateOnAnimation();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         float scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, getResources().getDisplayMetrics());
@@ -293,11 +306,10 @@ public class BigGraph extends View {
             float y = bottomBorderY - points[chartIndex][selectedIndex];
             mLinePaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex - 1].getColor()));
             canvas.drawCircle(selectedValue, y, 15, mLinePaint);
-            canvas.drawCircle(selectedValue, y, 10, mWhitePaint);
+            canvas.drawCircle(selectedValue, y, 10, mPointInnerPaint);
         }
 
         String dateText = formatDetail.format(new Date(mChartData.getX().getValues()[selectedIndex + leftIndex]));
-        mTextPaintDate.setColor(Color.BLACK);
         Rect textRectDate = new Rect();
         mTextPaintDate.getTextBounds(dateText, 0, dateText.length(), textRectDate);
 
@@ -308,9 +320,7 @@ public class BigGraph extends View {
         float heightDate = textRectDate.height() + marginVertical * 2;
 
         float horizontalDeltaPercent = selectedValue / getWidth();
-        Log.d("TAG", "horizontal delta: " + horizontalDeltaPercent);
 
-//        int lines = 0;
         int counter = 0;
         float lineWidth = 0f;
         float tmpWidth = 0f;
@@ -327,7 +337,6 @@ public class BigGraph extends View {
                 mTextPaintCount.getTextBounds(text, 0, text.length(), countRect);
                 mTextPaintName.getTextBounds(title, 0, title.length(), titleRect);
                 if (counter % 2 != 0) {
-//                    lines++;
                     lineWidth += Math.max(marginHorizontal * 2f + countRect.width(), marginHorizontal * 2f + titleRect.width());
                     tmpHeight += countRect.height() + marginVertical * 4f + titleRect.height();
                 } else {
