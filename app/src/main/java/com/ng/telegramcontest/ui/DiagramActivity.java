@@ -82,6 +82,8 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
             findViewById(R.id.big_graph_holder).setBackgroundColor(getResources().getColor(R.color.colorPrimaryNight));
         else
             findViewById(R.id.big_graph_holder).setBackgroundResource(0);
+
+        mDateSelectorView.addOnBorderChangeListener(this);
     }
 
     private void setViewsColor(boolean isNightTheme) {
@@ -171,15 +173,9 @@ public class DiagramActivity extends AppCompatActivity implements ChartNamesAdap
         setViewsColor(nowIsNight);
     }
 
-    @Override
-    protected void onPause() {
-        mDateSelectorView.addOnBorderChangeListener(null);
-        super.onPause();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mDateSelectorView.addOnBorderChangeListener(this);
-    }
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        mDateSelectorView.addOnBorderChangeListener(this);
+//    }
 }

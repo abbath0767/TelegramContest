@@ -6,9 +6,12 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -112,6 +115,8 @@ public class BigGraph extends View {
         mTextPaint.setStyle(Paint.Style.FILL);
         float scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, getResources().getDisplayMetrics());
         mTextPaint.setTextSize(scaledSizeInPixels);
+        Typeface bold = Typeface.create("roboto-medium", Typeface.NORMAL);
+        mTextPaint.setTypeface(bold);
 
         mTextPaintDate = new Paint();
         mTextPaintDate.setColor(Color.BLACK);
@@ -142,6 +147,7 @@ public class BigGraph extends View {
         mLinePaint.setStrokeWidth(getContext().getResources().getDimension(R.dimen.common_2));
         mLinePaint.setColor(Color.RED);
         mLinePaint.setAntiAlias(true);
+        mLinePaint.setStyle(Paint.Style.STROKE);
         setLayerType(LAYER_TYPE_HARDWARE, mLinePaint);
 
         mDetailPaint = new Paint();
@@ -233,6 +239,8 @@ public class BigGraph extends View {
                             int rightIndex = leftIndex + 1;
                             if (rightIndex >= points[0].length)
                                 rightIndex = leftIndex;
+                            if (leftIndex < 0)
+                                leftIndex = 0;
                             float leftValue = points[0][leftIndex];
                             float rightValue = points[0][rightIndex];
                             float deltaLeft = x - leftValue;
@@ -269,12 +277,14 @@ public class BigGraph extends View {
 
     public void setIsNightMode(boolean isNightTheme) {
         if (isNightTheme) {
+            mTextPaint.setColor(getContext().getResources().getColor(R.color.colorFollowNight));
             mPointInnerPaint.setColor(getResources().getColor(R.color.colorPrimaryNight));
             mTextPaintDate.setColor(Color.WHITE);
             mDetailPaint.setColor(getResources().getColor(R.color.colorPrimaryNight));
             mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorPrimaryDarkNight));
             mShadowPaint.setColor(getContext().getResources().getColor(R.color.colorPrimaryDarkNight));
         } else {
+            mTextPaint.setColor(getContext().getResources().getColor(R.color.colorPrimary));
             mPointInnerPaint.setColor(Color.WHITE);
             mTextPaintDate.setColor(Color.BLACK);
             mDetailPaint.setColor(getResources().getColor(R.color.defaultBackColor));
@@ -287,9 +297,6 @@ public class BigGraph extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        float scaledSizeInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 16, getResources().getDisplayMetrics());
-        mTextPaint.setTextSize(scaledSizeInPixels);
-        mTextPaint.setColor(getContext().getResources().getColor(R.color.colorPrimary));
         canvas.drawText(FOLLOWERS, 0, topBorderY, mTextPaint);
 
         if (!dataIsInit) {
@@ -316,7 +323,7 @@ public class BigGraph extends View {
             }
             float y = bottomBorderY - points[chartIndex][selectedIndex];
             mLinePaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex - 1].getColor()));
-            canvas.drawCircle(selectedValue, y, 15, mLinePaint);
+            canvas.drawCircle(selectedValue, y, 13, mLinePaint);
             canvas.drawCircle(selectedValue, y, 10, mPointInnerPaint);
         }
 
@@ -388,11 +395,11 @@ public class BigGraph extends View {
                 mTextPaintCount.getTextBounds(text, 0, text.length(), countRect);
                 mTextPaintName.getTextBounds(title, 0, title.length(), titleRect);
                 if (counter % 2 == 0) {
-                    canvas.drawText(text, left + marginHorizontal, top + marginVertical * 4f + textRectDate.height() + countRect.height() + tmpHeight, mTextPaintCount);
+                    canvas.drawText(text, left + marginHorizontal, top + marginVertical * 3f + textRectDate.height() + countRect.height() + tmpHeight, mTextPaintCount);
                     canvas.drawText(title, left + marginHorizontal, top + marginVertical * 4f + textRectDate.height() + countRect.height() + tmpHeight + titleRect.height(), mTextPaintName);
                     tmpLeft = marginHorizontal * 2f + Math.max(countRect.width(), titleRect.width());
                 } else {
-                    canvas.drawText(text, left + marginHorizontal + tmpLeft, top + marginVertical * 4f + textRectDate.height() + countRect.height() + tmpHeight, mTextPaintCount);
+                    canvas.drawText(text, left + marginHorizontal + tmpLeft, top + marginVertical * 3f + textRectDate.height() + countRect.height() + tmpHeight, mTextPaintCount);
                     canvas.drawText(title, left + marginHorizontal + tmpLeft, top + marginVertical * 4f + textRectDate.height() + countRect.height() + tmpHeight + titleRect.height(), mTextPaintName);
                     tmpLeft = 0f;
                     tmpHeight += marginVertical * 4f + countRect.height() + titleRect.height();
@@ -412,22 +419,17 @@ public class BigGraph extends View {
             canvas.drawLine(0, bottomBorderY - valueStep * i, getWidth(), bottomBorderY - valueStep * i, mSeparatorPaint);
         }
 
+        CornerPathEffect cornerPathEffect = new CornerPathEffect(0.5f);
+        mLinePaint.setPathEffect(cornerPathEffect);
         for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
             mLinePaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex].getColor()));
             mLinePaint.setAlpha(getAlphaFor(chartIndex));
-            float prevX = 0f;
-            float prevY = 0f;
-
-            for (int i = 0; i < points[0].length; i++) {
-                if (i == 0) {
-                    prevX = points[0][i];
-                    prevY = bottomBorderY - points[chartIndex + 1][i];
-                } else {
-                    canvas.drawLine(prevX, prevY, points[0][i], bottomBorderY - points[chartIndex + 1][i], mLinePaint);
-                    prevX = points[0][i];
-                    prevY = bottomBorderY - points[chartIndex + 1][i];
-                }
+            Path p = new Path();
+            p.moveTo(points[0][0], bottomBorderY - points[chartIndex + 1][0]);
+            for (int i = 1; i < points[0].length; i++) {
+                p.lineTo(points[0][i], bottomBorderY - points[chartIndex + 1][i]);
             }
+            canvas.drawPath(p, mLinePaint);
         }
 
         for (int i = 0; i < 6; i++) {

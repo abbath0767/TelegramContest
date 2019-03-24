@@ -24,6 +24,7 @@ public class ChartNameViewHolder extends RecyclerView.ViewHolder {
         checkBox = itemView.findViewById(R.id.item_chart_checkbox);
         separator = itemView.findViewById(R.id.item_chatr_separator);
         parent = itemView.findViewById(R.id.item_parent);
+        hock = itemView.findViewById(R.id.huck);
         mSelectChartListener = selectChartListener;
         mContext = context;
     }
@@ -32,10 +33,11 @@ public class ChartNameViewHolder extends RecyclerView.ViewHolder {
     private TextView name;
     private CheckBox checkBox;
     private View separator;
+    private View hock;
     private RelativeLayout parent;
     private Context mContext;
 
-    public void bind(DataSet dataSet, boolean isSelect, boolean isLast, boolean isNightTheme) {
+    public void bind(DataSet dataSet, boolean isSelect, boolean isLast, final boolean isNightTheme) {
         this.name.setText(dataSet.getEntityName());
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -43,6 +45,11 @@ public class ChartNameViewHolder extends RecyclerView.ViewHolder {
         }
 
         checkBox.setChecked(isSelect);
+        if (!isSelect && isNightTheme) {
+            hock.setVisibility(View.INVISIBLE);
+        } else {
+            hock.setVisibility(View.VISIBLE);
+        }
         if (isLast) separator.setVisibility(View.GONE);
         else separator.setVisibility(View.VISIBLE);
 
@@ -52,6 +59,11 @@ public class ChartNameViewHolder extends RecyclerView.ViewHolder {
                 int pos = getAdapterPosition();
                 if (pos == -1)
                     return;
+                if (!isChecked && isNightTheme) {
+                    hock.setVisibility(View.INVISIBLE);
+                } else {
+                    hock.setVisibility(View.VISIBLE);
+                }
                 mSelectChartListener.onChartSelect(pos, isChecked);
             }
         });
