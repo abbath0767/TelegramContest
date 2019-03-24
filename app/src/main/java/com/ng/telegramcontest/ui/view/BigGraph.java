@@ -199,6 +199,8 @@ public class BigGraph extends View {
                             }
                         }
                         int rightIndex = leftIndex + 1;
+                        if (rightIndex >= points[0].length)
+                            rightIndex = leftIndex;
                         float leftValue = points[0][leftIndex];
                         float rightValue = points[0][rightIndex];
                         float deltaLeft = x - leftValue;
@@ -219,6 +221,9 @@ public class BigGraph extends View {
                     }
                     case MotionEvent.ACTION_MOVE: {
                         if (deatilIsShow) {
+                            if (x > getWidth())
+                                x = getWidth();
+
                             int leftIndex = -1;
                             for (int i = 0; i < points[0].length; i++) {
                                 if (points[0][i] <= x) {
@@ -226,6 +231,8 @@ public class BigGraph extends View {
                                 }
                             }
                             int rightIndex = leftIndex + 1;
+                            if (rightIndex >= points[0].length)
+                                rightIndex = leftIndex;
                             float leftValue = points[0][leftIndex];
                             float rightValue = points[0][rightIndex];
                             float deltaLeft = x - leftValue;
