@@ -265,10 +265,14 @@ public class BigGraph extends View {
             mPointInnerPaint.setColor(getResources().getColor(R.color.colorPrimaryNight));
             mTextPaintDate.setColor(Color.WHITE);
             mDetailPaint.setColor(getResources().getColor(R.color.colorPrimaryNight));
+            mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorPrimaryDarkNight));
+            mShadowPaint.setColor(getContext().getResources().getColor(R.color.colorPrimaryDarkNight));
         } else {
             mPointInnerPaint.setColor(Color.WHITE);
             mTextPaintDate.setColor(Color.BLACK);
             mDetailPaint.setColor(getResources().getColor(R.color.defaultBackColor));
+            mSeparatorPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
+            mShadowPaint.setColor(getContext().getResources().getColor(R.color.colorSeparatorDay));
         }
 
         postInvalidateOnAnimation();
@@ -331,7 +335,7 @@ public class BigGraph extends View {
                 counter++;
                 long value = mChartData.getDataSets()[i].getValues()[selectedIndex + leftIndex];
                 String text = String.valueOf(value);
-                String title = mChartData.getDataSets()[i].getName();
+                String title = mChartData.getDataSets()[i].getEntityName();
                 Rect countRect = new Rect();
                 Rect titleRect = new Rect();
                 mTextPaintCount.getTextBounds(text, 0, text.length(), countRect);
@@ -371,7 +375,7 @@ public class BigGraph extends View {
                 mTextPaintName.setColor(Color.parseColor(mChartData.getDataSets()[i].getColor()));
                 long value = mChartData.getDataSets()[i].getValues()[selectedIndex + leftIndex];
                 String text = String.valueOf(value);
-                String title = mChartData.getDataSets()[i].getName();
+                String title = mChartData.getDataSets()[i].getEntityName();
                 Rect countRect = new Rect();
                 Rect titleRect = new Rect();
                 mTextPaintCount.getTextBounds(text, 0, text.length(), countRect);
@@ -392,6 +396,15 @@ public class BigGraph extends View {
     }
 
     private void drawLines(Canvas canvas) {
+        float textWidth = mDatePaint.measureText(preparedDateFormats[0]);
+        for (int i = 0; i < xTimeCoord.length; i++) {
+            canvas.drawText(preparedDateFormats[preparedDateFormatsIndexes[i]], xTimeCoord[i] - textWidth / 2f, bottomDateY, mDatePaint);
+        }
+
+        for (int i = 0; i < 6; i++) {
+            canvas.drawLine(0, bottomBorderY - valueStep * i, getWidth(), bottomBorderY - valueStep * i, mSeparatorPaint);
+        }
+
         for (int chartIndex = 0; chartIndex < mChartData.getDataSets().length; chartIndex++) {
             mLinePaint.setColor(Color.parseColor(mChartData.getDataSets()[chartIndex].getColor()));
             mLinePaint.setAlpha(getAlphaFor(chartIndex));
@@ -410,13 +423,7 @@ public class BigGraph extends View {
             }
         }
 
-        float textWidth = mDatePaint.measureText(preparedDateFormats[0]);
-        for (int i = 0; i < xTimeCoord.length; i++) {
-            canvas.drawText(preparedDateFormats[preparedDateFormatsIndexes[i]], xTimeCoord[i] - textWidth / 2f, bottomDateY, mDatePaint);
-        }
-
         for (int i = 0; i < 6; i++) {
-            canvas.drawLine(0, bottomBorderY - valueStep * i, getWidth(), bottomBorderY - valueStep * i, mSeparatorPaint);
             String text = String.valueOf(Math.round(((valueStep * i) * (drawMex - drawMin) / topValue) + drawMin));
             if (text.equals("-1"))
                 continue;

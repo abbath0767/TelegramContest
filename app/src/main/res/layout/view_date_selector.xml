@@ -5,6 +5,14 @@
        android:layout_height="@dimen/common_56"
        tools:parentTag="android.widget.RelativeLayout">
 
+    <com.ng.telegramcontest.ui.view.SmallGraph
+        android:id="@+id/view_date_selector_small_graph"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/common_48"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="@dimen/common_16"
+        android:layout_marginRight="@dimen/common_16"/>
+
     <com.ng.telegramcontest.ui.view.SelectWindowView
         android:id="@+id/view_date_selector_window"
         android:layout_width="match_parent"
@@ -13,12 +21,4 @@
         android:layout_marginLeft="@dimen/common_16"
         android:layout_marginRight="@dimen/common_16"
         />
-
-    <com.ng.telegramcontest.ui.view.SmallGraph
-        android:id="@+id/view_date_selector_small_graph"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/common_48"
-        android:layout_centerVertical="true"
-        android:layout_marginLeft="@dimen/common_16"
-        android:layout_marginRight="@dimen/common_16"/>
 </merge>
