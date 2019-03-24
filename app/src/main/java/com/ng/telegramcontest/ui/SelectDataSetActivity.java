@@ -60,7 +60,9 @@ public class SelectDataSetActivity extends AppCompatActivity {
         setUpChartsButtons(mDataStorage.getCharts().getChartsData(), isNightTheme);
     }
 
+    //todo fix this shit pls
     private void setUpChartsButtons(final ChartData[] chartsData, boolean isNightTheme) {
+        root.removeViews(1, root.getChildCount() - 1);
         for (int i = 0; i < chartsData.length; i++) {
             final int num = i;
             AppCompatButton button = new AppCompatButton(this, null, R.style.Selector);
